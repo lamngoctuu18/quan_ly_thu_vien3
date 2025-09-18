@@ -3,97 +3,72 @@ package client;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.*;
-import java.net.Socket;
 
 public class AdminUI extends JFrame {
-    private JTextField txtTitle, txtAuthor, txtQty;
-    private JTextArea txtResult;
-    private JButton btnAdd, btnDelete, btnList;
-
-    private Socket socket;
-    private PrintWriter out;
-    private BufferedReader in;
-
     public AdminUI() {
-        setTitle("Library Admin");
+        setTitle("Giao diện admin");
         setSize(600, 400);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        // Form thêm sách
-        JPanel formPanel = new JPanel(new GridLayout(4, 2));
-        formPanel.add(new JLabel("Title:"));
-        txtTitle = new JTextField();
-        formPanel.add(txtTitle);
+        // Thanh tiêu đề và nút đăng xuất
+        JPanel topPanel = new JPanel(new BorderLayout());
+        JLabel lblTitle = new JLabel("Giao diện admin");
+        lblTitle.setFont(new Font("Arial", Font.BOLD, 16));
+        lblTitle.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        JButton btnLogout = new JButton("Đăng xuất");
+        btnLogout.setPreferredSize(new Dimension(100, 30));
+        topPanel.add(lblTitle, BorderLayout.WEST);
+        topPanel.add(btnLogout, BorderLayout.EAST);
 
-        formPanel.add(new JLabel("Author:"));
-        txtAuthor = new JTextField();
-        formPanel.add(txtAuthor);
+        add(topPanel, BorderLayout.NORTH);
 
-        formPanel.add(new JLabel("Quantity:"));
-        txtQty = new JTextField();
-        formPanel.add(txtQty);
+        // Panel chứa các nút chức năng
+        JPanel centerPanel = new JPanel();
+        centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
+        centerPanel.setBackground(Color.LIGHT_GRAY);
 
-        btnAdd = new JButton("Add Book");
-        btnDelete = new JButton("Delete Book");
-        btnList = new JButton("List Borrows");
-        formPanel.add(btnAdd);
-        formPanel.add(btnDelete);
-        formPanel.add(btnList);
+        JButton btnBook = new JButton("Quản lý sách");
+        JButton btnUser = new JButton("Quản lý người dùng");
+        JButton btnBorrow = new JButton("Quản lý mượn / trả");
 
-        add(formPanel, BorderLayout.NORTH);
+        Dimension btnSize = new Dimension(220, 40);
+        btnBook.setMaximumSize(btnSize);
+        btnUser.setMaximumSize(btnSize);
+        btnBorrow.setMaximumSize(btnSize);
 
-        // Kết quả
-        txtResult = new JTextArea();
-        add(new JScrollPane(txtResult), BorderLayout.CENTER);
+        btnBook.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnUser.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnBorrow.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // Kết nối server
-        try {
-            socket = new Socket("localhost", 12345);
-            out = new PrintWriter(socket.getOutputStream(), true);
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Không thể kết nối server");
-            System.exit(0);
-        }
+        centerPanel.add(Box.createVerticalStrut(40));
+        centerPanel.add(btnBook);
+        centerPanel.add(Box.createVerticalStrut(20));
+        centerPanel.add(btnUser);
+        centerPanel.add(Box.createVerticalStrut(20));
+        centerPanel.add(btnBorrow);
 
-        // Event
-        btnAdd.addActionListener(e -> addBook());
-        btnDelete.addActionListener(e -> deleteBook());
-        btnList.addActionListener(e -> listBorrows());
-    }
+        add(centerPanel, BorderLayout.CENTER);
 
-    private void addBook() {
-        out.println("ADD_BOOK|" + txtTitle.getText() + "|" + txtAuthor.getText() + "|" + txtQty.getText());
-        try {
-            JOptionPane.showMessageDialog(this, in.readLine());
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-    }
+        // Sự kiện đăng xuất
+        btnLogout.addActionListener(e -> {
+            dispose();
+            SwingUtilities.invokeLater(() -> app.MainApp.main(null));
+        });
 
-    private void deleteBook() {
-        String id = JOptionPane.showInputDialog(this, "Nhập ID sách cần xóa:");
-        out.println("DELETE_BOOK|" + id);
-        try {
-            JOptionPane.showMessageDialog(this, in.readLine());
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-    }
+        // Sửa lại các sự kiện nút chức năng
+        btnBook.addActionListener(e -> {
+            new BookManagerUI().setVisible(true);
+        });
+        btnUser.addActionListener(e -> {
+            new UserManagerUI().setVisible(true);
+        });
+        btnBorrow.addActionListener(e -> {
+            // Đảm bảo mở đúng giao diện BorrowClientUI
+            BorrowClientUI borrowUI = new BorrowClientUI();
+            borrowUI.setVisible(true);
+        });
 
-    private void listBorrows() {
-        out.println("LIST_BORROWS");
-        try {
-            String resp = in.readLine();
-            txtResult.setText(resp.replace("BORROW_LIST|", "").replace(";", "\n"));
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new AdminUI().setVisible(true));
+        setLocationRelativeTo(null);
     }
 }

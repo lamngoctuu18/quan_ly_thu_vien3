@@ -10,6 +10,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
+import dao.UserDAO;
+
 public class ClientHandler extends Thread {
     private Socket socket;
     private BufferedReader in;
@@ -75,7 +77,8 @@ public class ClientHandler extends Thread {
     }
 
     private Connection getConnection() throws Exception {
-        return DriverManager.getConnection("jdbc:sqlite:library.db");
+        // Sửa lại đường dẫn cho đúng với file CSDL đã tạo
+        return DriverManager.getConnection("jdbc:sqlite:C:/data/library.db");
     }
 
     private void handleLogin(String[] parts) {
@@ -83,15 +86,28 @@ public class ClientHandler extends Thread {
         String username = parts[1];
         String password = parts[2];
         try (Connection conn = getConnection()) {
-            PreparedStatement ps = conn.prepareStatement("SELECT id, role FROM users WHERE username=? AND password=?");
+            PreparedStatement ps = conn.prepareStatement(
+                "SELECT id, role, username, password FROM users WHERE username=? AND password=?");
             ps.setString(1, username);
             ps.setString(2, password);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 int id = rs.getInt("id");
                 String role = rs.getString("role");
+                String dbUser = rs.getString("username");
+                String dbPass = rs.getString("password");
+                System.out.println("LOGIN DB: " + dbUser + " | " + dbPass + " | " + role);
                 out.println("LOGIN_SUCCESS|" + id + "|" + role);
             } else {
+                // Thêm log chi tiết để kiểm tra nguyên nhân
+                PreparedStatement ps2 = conn.prepareStatement("SELECT * FROM users WHERE username=?");
+                ps2.setString(1, username);
+                ResultSet rs2 = ps2.executeQuery();
+                if (rs2.next()) {
+                    System.out.println("LOGIN_FAIL: Tên đúng nhưng sai mật khẩu. DB pass=" + rs2.getString("password"));
+                } else {
+                    System.out.println("LOGIN_FAIL: Không tìm thấy username=" + username);
+                }
                 out.println("LOGIN_FAIL|Invalid credentials");
             }
         } catch (Exception e) {
@@ -100,16 +116,20 @@ public class ClientHandler extends Thread {
     }
 
     private void handleRegister(String[] parts) {
-        if (parts.length < 3) { out.println("REGISTER_FAIL|Missing params"); return; }
+        if (parts.length < 5) { out.println("REGISTER_FAIL|Missing params"); return; }
         String username = parts[1];
         String password = parts[2];
-        try (Connection conn = getConnection()) {
-            PreparedStatement ps = conn.prepareStatement("INSERT INTO users(username, password, role) VALUES(?,?,?)");
-            ps.setString(1, username);
-            ps.setString(2, password);
-            ps.setString(3, "user");
-            ps.executeUpdate();
-            out.println("REGISTER_SUCCESS");
+        String phone = parts[3];
+        String email = parts[4];
+        String role = "user";
+        try {
+            UserDAO dao = new UserDAO();
+            int result = dao.createUser(username, password, role, phone, email);
+            if (result > 0) {
+                out.println("REGISTER_SUCCESS");
+            } else {
+                out.println("REGISTER_FAIL|Could not create user");
+            }
         } catch (Exception e) {
             out.println("REGISTER_FAIL|" + e.getMessage());
         }
@@ -118,7 +138,8 @@ public class ClientHandler extends Thread {
     private void handleSearch(String[] parts) {
         String keyword = parts.length > 1 ? parts[1] : "";
         try (Connection conn = getConnection()) {
-            PreparedStatement ps = conn.prepareStatement("SELECT id, title, author, quantity FROM books WHERE title LIKE ? OR author LIKE ?");
+            PreparedStatement ps = conn.prepareStatement(
+                "SELECT id, title, author, publisher, year, quantity FROM books WHERE title LIKE ? OR author LIKE ?");
             String k = "%" + keyword + "%";
             ps.setString(1, k);
             ps.setString(2, k);
@@ -128,6 +149,8 @@ public class ClientHandler extends Thread {
                 sb.append(rs.getInt("id")).append(",")
                   .append(rs.getString("title")).append(",")
                   .append(rs.getString("author")).append(",")
+                  .append(rs.getString("publisher")).append(",")
+                  .append(rs.getString("year")).append(",")
                   .append(rs.getInt("quantity")).append(";");
             }
             out.println(sb.toString());

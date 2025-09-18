@@ -1,135 +1,190 @@
 package client;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import java.net.Socket;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 
 public class ClientUI extends JFrame {
-    private JTextField txtUser, txtPass, txtSearch;
-    private JTextArea txtResult;
-    private JButton btnLogin, btnRegister, btnSearch, btnBorrow, btnReturn;
+    private JTextField txtSearch;
+    private JButton btnSearch, btnBorrow, btnLogout;
+    private JLabel lblUser;
+    private JTable table;
+    private DefaultTableModel tableModel;
+    private int userId = -1;
+    private String username = "";
 
     private Socket socket;
     private PrintWriter out;
     private BufferedReader in;
-    private int userId = -1;
+    private JPopupMenu suggestPopup; // Popup gợi ý
 
     public ClientUI() {
-        setTitle("Library Client - User");
-        setSize(600, 400);
+        setTitle("Giao diện người dùng");
+        setSize(900, 500);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        // Login Panel
-        JPanel loginPanel = new JPanel(new GridLayout(3, 2));
-        loginPanel.add(new JLabel("Username:"));
-        txtUser = new JTextField();
-        loginPanel.add(txtUser);
+        // Tiêu đề
+        JLabel lblTitle = new JLabel("Giao diện người dùng");
+        lblTitle.setFont(new Font("Arial", Font.BOLD, 16));
+        lblTitle.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        add(lblTitle, BorderLayout.NORTH);
 
-        loginPanel.add(new JLabel("Password:"));
-        txtPass = new JPasswordField();
-        loginPanel.add(txtPass);
+        // Panel tài khoản + đăng xuất
+        JPanel topPanel = new JPanel(new BorderLayout());
+        lblUser = new JLabel("Tên tài khoản VD: ");
+        lblUser.setFont(new Font("Arial", Font.PLAIN, 14));
+        btnLogout = new JButton("Đăng xuất");
+        topPanel.add(lblUser, BorderLayout.WEST);
+        topPanel.add(btnLogout, BorderLayout.EAST);
+        add(topPanel, BorderLayout.BEFORE_FIRST_LINE);
 
-        btnLogin = new JButton("Login");
-        btnRegister = new JButton("Register");
-        loginPanel.add(btnLogin);
-        loginPanel.add(btnRegister);
-
-        add(loginPanel, BorderLayout.NORTH);
-
-        // Search Panel
-        JPanel searchPanel = new JPanel(new FlowLayout());
+        // Panel tìm kiếm + list sách đang mượn
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         txtSearch = new JTextField(20);
-        btnSearch = new JButton("Search");
-        btnBorrow = new JButton("Borrow");
-        btnReturn = new JButton("Return");
+        suggestPopup = new JPopupMenu();
+
+        btnSearch = new JButton("Tìm kiếm");
+        btnBorrow = new JButton("List sách đang mượn");
+        searchPanel.add(new JLabel("Ô tìm kiếm sách"));
         searchPanel.add(txtSearch);
         searchPanel.add(btnSearch);
         searchPanel.add(btnBorrow);
-        searchPanel.add(btnReturn);
+        add(searchPanel, BorderLayout.AFTER_LAST_LINE);
 
-        add(searchPanel, BorderLayout.SOUTH);
+        // Bảng sách
+        String[] cols = {"ID sách", "Tên sách", "Tác giả", "NXB", "Số lượng"};
+        tableModel = new DefaultTableModel(cols, 0);
+        table = new JTable(tableModel);
+        JScrollPane scrollPane = new JScrollPane(table);
+        add(scrollPane, BorderLayout.CENTER);
 
-        // Result Area
-        txtResult = new JTextArea();
-        add(new JScrollPane(txtResult), BorderLayout.CENTER);
-
-        // Connect server
+        // Kết nối server
         try {
             socket = new Socket("localhost", 12345);
             out = new PrintWriter(socket.getOutputStream(), true);
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            // Đọc dòng WELCOME ngay sau khi kết nối
+            String welcome = in.readLine();
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Không thể kết nối server");
             System.exit(0);
         }
 
-        // Event
-        btnLogin.addActionListener(e -> login());
-        btnRegister.addActionListener(e -> register());
-        btnSearch.addActionListener(e -> search());
-        btnBorrow.addActionListener(e -> borrow());
-        btnReturn.addActionListener(e -> returnBook());
+        // Sự kiện
+        btnSearch.addActionListener(e -> searchBooks());
+        btnBorrow.addActionListener(e -> {
+            // Mở giao diện danh sách sách đang mượn
+            BorrowListUI borrowListUI = new BorrowListUI(userId);
+            borrowListUI.setVisible(true);
+        });
+        btnLogout.addActionListener(e -> {
+            dispose();
+            SwingUtilities.invokeLater(() -> app.MainApp.main(null));
+        });
+
+        // Gợi ý khi nhập vào txtSearch
+        txtSearch.addKeyListener(new KeyAdapter() {
+            public void keyReleased(KeyEvent e) {
+                String kw = txtSearch.getText().trim();
+                suggestPopup.setVisible(false);
+                if (kw.length() < 1) return;
+
+                suggestPopup.removeAll();
+                try (Connection conn = DriverManager.getConnection("jdbc:sqlite:C:/data/library.db")) {
+                    PreparedStatement ps = conn.prepareStatement(
+                        "SELECT title, author, publisher FROM books WHERE title LIKE ? OR author LIKE ? OR publisher LIKE ? LIMIT 10");
+                    String likeKw = "%" + kw + "%";
+                    ps.setString(1, likeKw);
+                    ps.setString(2, likeKw);
+                    ps.setString(3, likeKw);
+                    ResultSet rs = ps.executeQuery();
+                    java.util.Set<String> suggestions = new java.util.LinkedHashSet<>();
+                    while (rs.next()) {
+                        String t = rs.getString("title");
+                        String a = rs.getString("author");
+                        String p = rs.getString("publisher");
+                        if (t != null && t.toLowerCase().contains(kw.toLowerCase())) suggestions.add(t);
+                        if (a != null && a.toLowerCase().contains(kw.toLowerCase())) suggestions.add(a);
+                        if (p != null && p.toLowerCase().contains(kw.toLowerCase())) suggestions.add(p);
+                    }
+                    if (!suggestions.isEmpty()) {
+                        for (String s : suggestions) {
+                            JMenuItem item = new JMenuItem(s);
+                            item.addActionListener(ev -> {
+                                txtSearch.setText(s);
+                                suggestPopup.setVisible(false);
+                            });
+                            suggestPopup.add(item);
+                        }
+                        suggestPopup.show(txtSearch, 0, txtSearch.getHeight());
+                    }
+                } catch (Exception ex) {
+                    suggestPopup.setVisible(false);
+                }
+            }
+        });
+
+        // Ẩn popup khi mất focus
+        txtSearch.addFocusListener(new FocusAdapter() {
+            public void focusLost(FocusEvent e) {
+                suggestPopup.setVisible(false);
+            }
+        });
+
+        setLocationRelativeTo(null);
     }
 
-    private void login() {
-        out.println("LOGIN|" + txtUser.getText() + "|" + txtPass.getText());
+    // Đặt tên tài khoản khi đăng nhập thành công
+    public void setUserInfo(int id, String username) {
+        this.userId = id;
+        this.username = username;
+        lblUser.setText("Tên tài khoản " + username);
+    }
+
+    private void searchBooks() {
+        String kw = txtSearch.getText().trim();
+        out.println("SEARCH|" + kw);
         try {
             String resp = in.readLine();
-            if (resp.startsWith("LOGIN_SUCCESS")) {
-                userId = Integer.parseInt(resp.split("\\|")[1]);
-                JOptionPane.showMessageDialog(this, "Login thành công! UserID=" + userId);
+            // Nếu dòng đầu là WELCOME, đọc tiếp dòng kết quả
+            if (resp != null && resp.startsWith("WELCOME|")) {
+                resp = in.readLine();
+            }
+            tableModel.setRowCount(0);
+            if (resp != null && resp.startsWith("SEARCH_RESULT|")) {
+                String[] rows = resp.substring("SEARCH_RESULT|".length()).split(";");
+                for (String row : rows) {
+                    if (row.trim().isEmpty()) continue;
+                    String[] vals = row.split(",");
+                    Object[] data = new Object[5];
+                    data[0] = vals.length > 0 ? vals[0] : ""; // ID sách
+                    data[1] = vals.length > 1 ? vals[1] : ""; // Tên sách
+                    data[2] = vals.length > 2 ? vals[2] : ""; // Tác giả
+                    data[3] = vals.length > 3 ? vals[3] : ""; // NXB
+                    data[4] = vals.length > 5 ? vals[5] : ""; // Số lượng (cột thứ 6 trong dữ liệu server)
+                    tableModel.addRow(data);
+                }
             } else {
-                JOptionPane.showMessageDialog(this, "Login thất bại!");
+                JOptionPane.showMessageDialog(this, "Không có dữ liệu sách.");
             }
         } catch (Exception ex) {
             ex.printStackTrace();
-        }
-    }
-
-    private void register() {
-        out.println("REGISTER|" + txtUser.getText() + "|" + txtPass.getText());
-        try {
-            String resp = in.readLine();
-            JOptionPane.showMessageDialog(this, resp);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-    }
-
-    private void search() {
-        out.println("SEARCH|" + txtSearch.getText());
-        try {
-            String resp = in.readLine();
-            txtResult.setText(resp.replace("SEARCH_RESULT|", "").replace(";", "\n"));
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-    }
-
-    private void borrow() {
-        String bookId = JOptionPane.showInputDialog(this, "Nhập ID sách cần mượn:");
-        out.println("BORROW|" + userId + "|" + bookId);
-        try {
-            JOptionPane.showMessageDialog(this, in.readLine());
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-    }
-
-    private void returnBook() {
-        String bookId = JOptionPane.showInputDialog(this, "Nhập ID sách cần trả:");
-        out.println("RETURN|" + userId + "|" + bookId);
-        try {
-            JOptionPane.showMessageDialog(this, in.readLine());
-        } catch (Exception ex) {
-            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Lỗi khi nhận dữ liệu từ server");
         }
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new ClientUI().setVisible(true));
+        SwingUtilities.invokeLater(() -> {
+            ClientUI ui = new ClientUI();
+            ui.setVisible(true);
+        });
     }
 }

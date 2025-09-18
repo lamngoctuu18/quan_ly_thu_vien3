@@ -27,13 +27,17 @@ public class InitDatabase {
                     "id INTEGER PRIMARY KEY AUTOINCREMENT," +
                     "username TEXT UNIQUE," +
                     "password TEXT," +
-                    "role TEXT)");
+                    "role TEXT," +
+                    "phone TEXT," +
+                    "email TEXT)");
 
             // Tạo bảng books
             stmt.execute("CREATE TABLE IF NOT EXISTS books (" +
                     "id INTEGER PRIMARY KEY AUTOINCREMENT," +
                     "title TEXT," +
                     "author TEXT," +
+                    "publisher TEXT," +      
+                    "year TEXT," +          
                     "quantity INTEGER)");
 
             // Tạo bảng borrows
@@ -47,7 +51,7 @@ public class InitDatabase {
                     "FOREIGN KEY(book_id) REFERENCES books(id))");
 
             // Tạo admin mặc định
-            stmt.execute("INSERT OR IGNORE INTO users(username, password, role) VALUES('admin','admin','admin')");
+            stmt.execute("INSERT OR IGNORE INTO users(username, password, role, phone, email) VALUES('admin','admin','admin','','')");
 
             conn.close();
             System.out.println("CSDL đã khởi tạo thành công tại: " + DB_PATH);

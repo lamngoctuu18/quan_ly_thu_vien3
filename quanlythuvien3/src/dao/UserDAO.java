@@ -6,12 +6,20 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
 public class UserDAO {
-    private Connection getConn() throws Exception { return DriverManager.getConnection("jdbc:sqlite:library.db"); }
+    private Connection getConn() throws Exception { 
+        // Sửa lại đường dẫn cho đúng với file CSDL đã tạo
+        return DriverManager.getConnection("jdbc:sqlite:C:/data/library.db"); 
+    }
 
-    public int createUser(String username, String password, String role) throws Exception {
+    // Sửa lại để nhận thêm phone và email
+    public int createUser(String username, String password, String role, String phone, String email) throws Exception {
         try (Connection c = getConn()) {
-            PreparedStatement ps = c.prepareStatement("INSERT INTO users(username,password,role) VALUES(?,?,?)");
-            ps.setString(1, username); ps.setString(2, password); ps.setString(3, role);
+            PreparedStatement ps = c.prepareStatement("INSERT INTO users(username,password,role,phone,email) VALUES(?,?,?,?,?)");
+            ps.setString(1, username); 
+            ps.setString(2, password); 
+            ps.setString(3, role);
+            ps.setString(4, phone);
+            ps.setString(5, email);
             return ps.executeUpdate();
         }
     }
