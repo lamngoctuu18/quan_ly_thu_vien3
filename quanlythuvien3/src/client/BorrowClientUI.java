@@ -465,7 +465,8 @@ public class BorrowClientUI extends JFrame {
             return;
         }
         String id = returnModel.getValueAt(row, 0).toString();
-        String returnDate = LocalDate.now().format(DateTimeFormatter.ISO_DATE);
+        // Lấy ngày trả theo thời gian thực
+        String returnDate = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ISO_DATE);
 
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:C:/data/library.db")) {
             // Lấy book_id từ phiếu mượn
@@ -477,7 +478,6 @@ public class BorrowClientUI extends JFrame {
                 bookId = rsBook.getInt("book_id");
             }
 
-            // ...existing code cập nhật return_date...
             PreparedStatement ps = conn.prepareStatement(
                 "UPDATE borrows SET return_date=? WHERE id=?");
             ps.setString(1, returnDate);
@@ -491,7 +491,7 @@ public class BorrowClientUI extends JFrame {
                     psUpdateQty.setInt(1, bookId);
                     psUpdateQty.executeUpdate();
                 }
-                JOptionPane.showMessageDialog(this, "Trả sách thành công!");
+                JOptionPane.showMessageDialog(this, "Trả sách thành công!\nNgày trả: " + returnDate);
                 loadReturnList();
                 loadBorrowList();
             } else {
