@@ -13,61 +13,183 @@ public class UserManagerUI extends JFrame {
 
     public UserManagerUI() {
         setTitle("Quản lý người dùng");
-        setSize(700, 400);
+        setMinimumSize(new Dimension(700, 400));
+        setPreferredSize(new Dimension(900, 600));
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-        setLayout(new BorderLayout());
+
+        JPanel mainPanel = new JPanel();
+        mainPanel.setBackground(new Color(245, 248, 255));
+        setContentPane(mainPanel);
+
+        GroupLayout layout = new GroupLayout(mainPanel);
+        mainPanel.setLayout(layout);
+        layout.setAutoCreateGaps(true);
+        layout.setAutoCreateContainerGaps(true);
 
         // Top panel: nhập số điện thoại, tìm kiếm, quay lại
-        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JLabel lblTitle = new JLabel("Quản lý người dùng");
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        lblTitle.setForeground(new Color(0, 51, 102));
+        lblTitle.setBorder(BorderFactory.createEmptyBorder(18, 18, 0, 0));
+
+        JLabel lblPhoneInput = new JLabel("Ô nhập số điện thoại:");
+        lblPhoneInput.setForeground(new Color(0, 51, 102));
         txtPhone = new JTextField(15);
+        txtPhone.setBackground(Color.WHITE);
+        txtPhone.setForeground(new Color(0, 51, 102));
         btnSearch = new JButton("Tìm kiếm");
+        btnSearch.setBackground(new Color(0, 102, 204));
+        btnSearch.setForeground(Color.WHITE);
+        btnSearch.setFont(new Font("Segoe UI", Font.BOLD, 15));
         btnBack = new JButton("Quay lại");
-        topPanel.add(new JLabel("Ô nhập số điện thoại"));
-        topPanel.add(txtPhone);
-        topPanel.add(btnSearch);
-        topPanel.add(btnBack);
-        add(topPanel, BorderLayout.NORTH);
+        btnBack.setBackground(new Color(255, 153, 51));
+        btnBack.setForeground(Color.WHITE);
+        btnBack.setFont(new Font("Segoe UI", Font.BOLD, 15));
+
+        JPanel topPanel = new JPanel();
+        topPanel.setBackground(new Color(245, 248, 255));
+        GroupLayout topLayout = new GroupLayout(topPanel);
+        topPanel.setLayout(topLayout);
+        topLayout.setAutoCreateGaps(true);
+        topLayout.setAutoCreateContainerGaps(true);
+        topLayout.setHorizontalGroup(
+            topLayout.createSequentialGroup()
+                .addComponent(lblPhoneInput)
+                .addComponent(txtPhone, GroupLayout.PREFERRED_SIZE, 180, GroupLayout.PREFERRED_SIZE)
+                .addComponent(btnSearch, GroupLayout.PREFERRED_SIZE, 120, GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 400, Short.MAX_VALUE)
+                .addComponent(btnBack, GroupLayout.PREFERRED_SIZE, 120, GroupLayout.PREFERRED_SIZE)
+        );
+        topLayout.setVerticalGroup(
+            topLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                .addComponent(lblPhoneInput)
+                .addComponent(txtPhone)
+                .addComponent(btnSearch)
+                .addComponent(btnBack)
+        );
 
         // Center panel: thông tin người dùng
-        JPanel infoPanel = new JPanel(new GridLayout(5, 3));
-        infoPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        JPanel infoPanel = new JPanel();
+        infoPanel.setBackground(new Color(255, 245, 230));
+        GroupLayout infoLayout = new GroupLayout(infoPanel);
+        infoPanel.setLayout(infoLayout);
+        infoLayout.setAutoCreateGaps(true);
+        infoLayout.setAutoCreateContainerGaps(true);
+
+        // Tạo các label tiêu đề để dùng cho cả horizontal/vertical group
+        JLabel lblNameTitle = new JLabel("Tên người dùng:");
+        JLabel lblEmailTitle = new JLabel("Email người dùng:");
+        JLabel lblPhoneTitle = new JLabel("Số điện thoại:");
+        JLabel lblBorrowTitle = new JLabel("Số lượng sách đang mượn:");
+        JLabel lblReturnTitle = new JLabel("Số lượng sách sắp đến hạn trả:");
+
         lblName = new JLabel();
         lblEmail = new JLabel();
         lblPhone = new JLabel();
         lblBorrowCount = new JLabel();
         lblReturnSoonCount = new JLabel();
         btnBorrowDetail = new JButton("Xem chi tiết");
+        btnBorrowDetail.setBackground(new Color(0, 153, 76));
+        btnBorrowDetail.setForeground(Color.WHITE);
+        btnBorrowDetail.setFont(new Font("Segoe UI", Font.BOLD, 15));
         btnReturnDetail = new JButton("Xem chi tiết");
+        btnReturnDetail.setBackground(new Color(255, 102, 0));
+        btnReturnDetail.setForeground(Color.WHITE);
+        btnReturnDetail.setFont(new Font("Segoe UI", Font.BOLD, 15));
 
-        infoPanel.add(new JLabel("Tên người dùng"));
-        infoPanel.add(lblName);
-        infoPanel.add(new JLabel(""));
-
-        infoPanel.add(new JLabel("Email người dùng"));
-        infoPanel.add(lblEmail);
-        infoPanel.add(new JLabel(""));
-
-        infoPanel.add(new JLabel("Số điện thoại"));
-        infoPanel.add(lblPhone);
-        infoPanel.add(new JLabel(""));
-
-        infoPanel.add(new JLabel("Số lượng sách đang mượn"));
-        infoPanel.add(lblBorrowCount);
-        infoPanel.add(btnBorrowDetail);
-
-        infoPanel.add(new JLabel("Số lượng sách sắp đến hạn trả"));
-        infoPanel.add(lblReturnSoonCount);
-        infoPanel.add(btnReturnDetail);
-
-        add(infoPanel, BorderLayout.CENTER);
+        infoLayout.setHorizontalGroup(
+            infoLayout.createSequentialGroup()
+                .addGroup(infoLayout.createParallelGroup(GroupLayout.Alignment.TRAILING)
+                    .addComponent(lblNameTitle)
+                    .addComponent(lblEmailTitle)
+                    .addComponent(lblPhoneTitle)
+                    .addComponent(lblBorrowTitle)
+                    .addComponent(lblReturnTitle)
+                )
+                .addGroup(infoLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
+                    .addComponent(lblName)
+                    .addComponent(lblEmail)
+                    .addComponent(lblPhone)
+                    .addComponent(lblBorrowCount)
+                    .addComponent(lblReturnSoonCount)
+                )
+                .addGroup(infoLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
+                    .addGap(0)
+                    .addGap(0)
+                    .addGap(0)
+                    .addComponent(btnBorrowDetail, GroupLayout.PREFERRED_SIZE, 120, GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btnReturnDetail, GroupLayout.PREFERRED_SIZE, 120, GroupLayout.PREFERRED_SIZE)
+                )
+        );
+        infoLayout.setVerticalGroup(
+            infoLayout.createSequentialGroup()
+                .addGap(18)
+                .addGroup(infoLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                    .addComponent(lblNameTitle)
+                    .addComponent(lblName)
+                    .addGap(0))
+                .addGroup(infoLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                    .addComponent(lblEmailTitle)
+                    .addComponent(lblEmail)
+                    .addGap(0))
+                .addGroup(infoLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                    .addComponent(lblPhoneTitle)
+                    .addComponent(lblPhone)
+                    .addGap(0))
+                .addGroup(infoLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                    .addComponent(lblBorrowTitle)
+                    .addComponent(lblBorrowCount)
+                    .addComponent(btnBorrowDetail))
+                .addGroup(infoLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                    .addComponent(lblReturnTitle)
+                    .addComponent(lblReturnSoonCount)
+                    .addComponent(btnReturnDetail))
+        );
 
         // Bottom panel: nút sửa, xóa
-        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JPanel bottomPanel = new JPanel();
+        bottomPanel.setBackground(new Color(245, 248, 255));
+        GroupLayout bottomLayout = new GroupLayout(bottomPanel);
+        bottomPanel.setLayout(bottomLayout);
+        bottomLayout.setAutoCreateGaps(true);
+        bottomLayout.setAutoCreateContainerGaps(true);
+
         btnEdit = new JButton("Sửa thông tin người dùng");
-        btnDelete = new JButton("Xóa người dùng"); // Đổi tên nút
-        bottomPanel.add(btnEdit);
-        bottomPanel.add(btnDelete);
-        add(bottomPanel, BorderLayout.SOUTH);
+        btnEdit.setBackground(new Color(0, 102, 204));
+        btnEdit.setForeground(Color.WHITE);
+        btnEdit.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        btnDelete = new JButton("Xóa người dùng");
+        btnDelete.setBackground(new Color(204, 0, 0));
+        btnDelete.setForeground(Color.WHITE);
+        btnDelete.setFont(new Font("Segoe UI", Font.BOLD, 15));
+
+        bottomLayout.setHorizontalGroup(
+            bottomLayout.createSequentialGroup()
+                .addComponent(btnEdit, GroupLayout.PREFERRED_SIZE, 200, GroupLayout.PREFERRED_SIZE)
+                .addComponent(btnDelete, GroupLayout.PREFERRED_SIZE, 200, GroupLayout.PREFERRED_SIZE)
+        );
+        bottomLayout.setVerticalGroup(
+            bottomLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                .addComponent(btnEdit)
+                .addComponent(btnDelete)
+        );
+
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(GroupLayout.Alignment.CENTER)
+                .addComponent(lblTitle)
+                .addComponent(topPanel)
+                .addComponent(infoPanel)
+                .addComponent(bottomPanel)
+        );
+        layout.setVerticalGroup(
+            layout.createSequentialGroup()
+                .addGap(18)
+                .addComponent(lblTitle)
+                .addComponent(topPanel, GroupLayout.PREFERRED_SIZE, 40, GroupLayout.PREFERRED_SIZE)
+                .addComponent(infoPanel, GroupLayout.PREFERRED_SIZE, 220, GroupLayout.PREFERRED_SIZE)
+                .addGap(10)
+                .addComponent(bottomPanel, GroupLayout.PREFERRED_SIZE, 50, GroupLayout.PREFERRED_SIZE)
+        );
 
         // Sự kiện tìm kiếm
         btnSearch.addActionListener(e -> searchUser());
@@ -82,6 +204,7 @@ public class UserManagerUI extends JFrame {
         btnBorrowDetail.addActionListener(e -> JOptionPane.showMessageDialog(this, "Chi tiết sách đang mượn"));
         btnReturnDetail.addActionListener(e -> JOptionPane.showMessageDialog(this, "Chi tiết sách sắp đến hạn trả"));
 
+        pack();
         setLocationRelativeTo(null);
     }
 

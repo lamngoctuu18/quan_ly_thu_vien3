@@ -60,6 +60,12 @@ public class ClientHandler extends Thread {
                     case "LIST_BORROWS":
                         handleListBorrows();
                         break;
+                    case "FAVORITE":
+                        handleFavorite(parts);
+                        break;
+                    case "LIST_ACTIVITIES":
+                        handleListActivities(parts);
+                        break;
                     case "EXIT":
                         out.println("BYE");
                         socket.close();
@@ -184,6 +190,13 @@ public class ClientHandler extends Thread {
             borrow.setInt(2, bookId);
             borrow.executeUpdate();
 
+            // Ghi lịch sử mượn
+            PreparedStatement act = conn.prepareStatement("INSERT INTO activities(user_id, book_id, action, action_time) VALUES(?,?,?,datetime('now'))");
+            act.setInt(1, userId);
+            act.setInt(2, bookId);
+            act.setString(3, "borrow");
+            act.executeUpdate();
+
             PreparedStatement update = conn.prepareStatement("UPDATE books SET quantity=quantity-1 WHERE id=?");
             update.setInt(1, bookId);
             update.executeUpdate();
@@ -210,6 +223,12 @@ public class ClientHandler extends Thread {
                 PreparedStatement update = conn.prepareStatement("UPDATE books SET quantity=quantity+1 WHERE id=?");
                 update.setInt(1, bookId);
                 update.executeUpdate();
+                // Ghi lịch sử trả
+                PreparedStatement act = conn.prepareStatement("INSERT INTO activities(user_id, book_id, action, action_time) VALUES(?,?,?,datetime('now'))");
+                act.setInt(1, userId);
+                act.setInt(2, bookId);
+                act.setString(3, "return");
+                act.executeUpdate();
                 conn.commit();
                 out.println("RETURN_SUCCESS");
             } else {
@@ -266,6 +285,83 @@ public class ClientHandler extends Thread {
             out.println(sb.toString());
         } catch (Exception e) {
             out.println("LIST_BORROWS_FAIL|" + e.getMessage());
+        }
+    }
+
+    private void handleFavorite(String[] parts) {
+        // FAVORITE|userId|bookId
+        if (parts.length < 3) { out.println("FAVORITE_FAIL|Missing params"); return; }
+        int userId = Integer.parseInt(parts[1]);
+        int bookId = Integer.parseInt(parts[2]);
+        try (Connection conn = getConnection()) {
+            // Kiểm tra bảng activities, nếu chưa có thì tạo bảng
+            try {
+                conn.createStatement().executeQuery("SELECT id FROM activities LIMIT 1");
+            } catch (Exception e) {
+                conn.createStatement().execute(
+                    "CREATE TABLE IF NOT EXISTS activities (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                    "user_id INTEGER," +
+                    "book_id INTEGER," +
+                    "action TEXT," +
+                    "action_time TEXT," +
+                    "FOREIGN KEY(user_id) REFERENCES users(id)," +
+                    "FOREIGN KEY(book_id) REFERENCES books(id))"
+                );
+            }
+            // Kiểm tra cột favorite có tồn tại không
+            try {
+                conn.createStatement().executeQuery("SELECT favorite FROM books LIMIT 1");
+            } catch (Exception e) {
+                out.println("FAVORITE_FAIL|Cột favorite chưa tồn tại trong bảng books");
+                return;
+            }
+            // Kiểm tra sách có tồn tại không
+            PreparedStatement check = conn.prepareStatement("SELECT id FROM books WHERE id=?");
+            check.setInt(1, bookId);
+            ResultSet rs = check.executeQuery();
+            if (!rs.next()) {
+                out.println("FAVORITE_FAIL|Book not found");
+                return;
+            }
+            // Cập nhật trường favorite
+            PreparedStatement ps = conn.prepareStatement("UPDATE books SET favorite=1 WHERE id=?");
+            ps.setInt(1, bookId);
+            int updated = ps.executeUpdate();
+            if (updated == 0) {
+                out.println("FAVORITE_FAIL|Update failed");
+                return;
+            }
+            // Ghi lịch sử yêu thích
+            PreparedStatement act = conn.prepareStatement("INSERT INTO activities(user_id, book_id, action, action_time) VALUES(?,?,?,datetime('now'))");
+            act.setInt(1, userId);
+            act.setInt(2, bookId);
+            act.setString(3, "favorite");
+            act.executeUpdate();
+            out.println("FAVORITE_SUCCESS");
+        } catch (Exception e) {
+            out.println("FAVORITE_FAIL|" + e.getMessage());
+        }
+    }
+
+    private void handleListActivities(String[] parts) {
+        // LIST_ACTIVITIES|userId
+        if (parts.length < 2) { out.println("ACTIVITIES_FAIL|Missing params"); return; }
+        int userId = Integer.parseInt(parts[1]);
+        try (Connection conn = getConnection()) {
+            PreparedStatement ps = conn.prepareStatement(
+                "SELECT a.action, a.action_time, b.title FROM activities a LEFT JOIN books b ON a.book_id=b.id WHERE a.user_id=? ORDER BY a.action_time DESC");
+            ps.setInt(1, userId);
+            ResultSet rs = ps.executeQuery();
+            StringBuilder sb = new StringBuilder("ACTIVITIES_RESULT|");
+            while (rs.next()) {
+                sb.append(rs.getString("action")).append(",")
+                  .append(rs.getString("action_time")).append(",")
+                  .append(rs.getString("title")).append(";");
+            }
+            out.println(sb.toString());
+        } catch (Exception e) {
+            out.println("ACTIVITIES_FAIL|" + e.getMessage());
         }
     }
 }

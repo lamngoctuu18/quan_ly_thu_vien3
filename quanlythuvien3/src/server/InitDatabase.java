@@ -38,7 +38,10 @@ public class InitDatabase {
                     "author TEXT," +
                     "publisher TEXT," +      
                     "year TEXT," +          
-                    "quantity INTEGER)");
+                    "quantity INTEGER," +
+                    "category TEXT," +
+                    "favorite INTEGER DEFAULT 0" +
+                    ")");
 
             // Tạo bảng borrows
             stmt.execute("CREATE TABLE IF NOT EXISTS borrows (" +
@@ -47,6 +50,16 @@ public class InitDatabase {
                     "book_id INTEGER," +
                     "borrow_date TEXT," +
                     "return_date TEXT," +
+                    "FOREIGN KEY(user_id) REFERENCES users(id)," +
+                    "FOREIGN KEY(book_id) REFERENCES books(id))");
+
+            // Tạo bảng activities (lịch sử hoạt động)
+            stmt.execute("CREATE TABLE IF NOT EXISTS activities (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                    "user_id INTEGER," +
+                    "book_id INTEGER," +
+                    "action TEXT," + // borrow, return, favorite
+                    "action_time TEXT," +
                     "FOREIGN KEY(user_id) REFERENCES users(id)," +
                     "FOREIGN KEY(book_id) REFERENCES books(id))");
 
