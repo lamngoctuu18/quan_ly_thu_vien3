@@ -1,5 +1,4 @@
-<img width="1508" height="1687" alt="aiotlab_logo" src="https://github.com/user-attachments/assets/e3f729de-ac54-49cc-aa42-8681dc24c124" /><h2 align="center">
-    <a href="https://dainam.edu.vn/vi/khoa-cong-nghe-thong-tin">
+
     🎓 Faculty of Information Technology (DaiNam University)
     </a>
 </h2>
