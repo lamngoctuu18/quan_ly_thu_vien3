@@ -61,7 +61,7 @@ Hệ thống quản lý sách - thư viện qua mạng được xây dựng nh�
 
 **Hình 1: <img src="https://img.icons8.com/ios-filled/24/000000/login-rounded-right.png"/> Giao diện đăng nhập**
 <p align="center">
-    ![dangnhap](https://github.com/user-attachments/assets/65719709-f88d-4727-9a81-cd7ac41b12c9)
+    <img width="398" height="301" alt="image" src="https://github.com/user-attachments/assets/ccf3e979-8caa-4072-9bef-500fc2d8bf28" />
 </p>
 
 **Hình 2: <img src="https://img.icons8.com/ios-filled/24/000000/login-rounded-right.png"/> Giao diện đăng ký**
@@ -81,32 +81,31 @@ Hệ thống quản lý sách - thư viện qua mạng được xây dựng nh�
 
 **Hình 5: <img src="https://img.icons8.com/ios-filled/24/000000/borrow-book.png"/> Giao diện quản lý mượn/trả sách**
 <p align="center">
-    <img src="docs/screenshot_borrowclient.png" alt="Giao diện mượn trả sách" width="600"/>
+
 </p>
 
 **Hình 6: <img src="https://img.icons8.com/ios-filled/24/000000/borrow-book.png"/> Giao diện quản lý sách**
 <p align="center">
-    <img src="docs/screenshot_borrowclient.png" alt="Giao diện mượn trả sách" width="600"/>
-</p>
+   
 
 **Hình 7: <img src="https://img.icons8.com/ios-filled/24/000000/invoice.png"/> Giao diện hóa đơn mượn sách**
 <p align="center">
-    <img width="600" alt="image" src="https://github.com/user-attachments/assets/69b20131-5143-49ad-90df-0fc80b0386cd" />
+   
 </p>
 
 **Hình 8: <img src="https://img.icons8.com/ios-filled/24/000000/invoice.png"/> Giao diện đăng ký mượn sách**
 <p align="center">
-   <img width="600" alt="image" src="https://github.com/user-attachments/assets/371bb389-862b-45eb-9457-579c27c1ace9" />
+ 
 </p>
 
 **Hình 9: <img src="https://img.icons8.com/ios-filled/24/000000/invoice.png"/> Giao diện thêm sách vào yêu thích**
 <p align="center">
-    <img width="674" height="387" alt="image" src="https://github.com/user-attachments/assets/951d00b9-f334-4885-84e9-058b8beefa0c" />
+   
 </p>
 
 **Hình 10: <img src="https://img.icons8.com/ios-filled/24/000000/invoice.png"/> Giao diện lịch sử hoạt động**
 <p align="center">
-    <img src="docs/screenshot_invoice.png" alt="Giao diện hóa đơn mượn sách" width="600"/>
+   
 </p>
 
 ## 4. Hướng dẫn cài đặt và sử dụng
