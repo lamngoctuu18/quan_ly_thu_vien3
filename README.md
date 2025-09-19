@@ -1,6 +1,8 @@
-<a>
+<h2 align="center">
+    <a href="https://dainam.edu.vn/vi/khoa-cong-nghe-thong-tin">
     🎓 Faculty of Information Technology (DaiNam University)
     </a>
+</h2>
 </h2>
 <h2 align="center">
    Quản lý sách - thư viện qua mạng
@@ -57,14 +59,12 @@ Hệ thống quản lý sách - thư viện qua mạng được xây dựng nh�
 
 ## 3. Hình ảnh các chức năng
 
-<!-- Giữ nguyên phần hình ảnh logo -->
+**Hình 1: <img src="https://img.icons8.com/ios-filled/24/000000/login-rounded-right.png"/> Giao diện đăng nhập**
 <p align="center">
-    <img src="docs/aiotlab_logo.png" alt="AIoTLab Logo" width="170"/>
-    <img src="docs/fitdnu_logo.png" alt="AIoTLab Logo" width="180"/>
-    <img src="docs/dnu_logo.png" alt="DaiNam University Logo" width="200"/>
+    <img src="docs/screenshot_login.png" alt="Giao diện đăng nhập" width="600"/>
 </p>
 
-**Hình 1: <img src="https://img.icons8.com/ios-filled/24/000000/login-rounded-right.png"/> Giao diện đăng nhập**
+**Hình 2: <img src="https://img.icons8.com/ios-filled/24/000000/login-rounded-right.png"/> Giao diện đăng ký**
 <p align="center">
     <img src="docs/screenshot_login.png" alt="Giao diện đăng nhập" width="600"/>
 </p>
