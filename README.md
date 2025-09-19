@@ -3,14 +3,15 @@
     🎓 Faculty of Information Technology (DaiNam University)
     </a>
 </h2>
+</h2>
 <h2 align="center">
    Quản lý sách - thư viện qua mạng
 </h2>
 <div align="center">
     <p align="center">
-        <img src="docs/aiotlab_logo.png" alt="AIoTLab Logo" width="170"/>
-        <img src="docs/fitdnu_logo.png" alt="AIoTLab Logo" width="180"/>
-        <img src="docs/dnu_logo.png" alt="DaiNam University Logo" width="200"/>
+        <img width="170" alt="aiotlab_logo" src="https://github.com/user-attachments/assets/41ef702b-3d6e-4ac4-beac-d8c9a874bca9" />
+        <img width="180" alt="fitdnu_logo" src="https://github.com/user-attachments/assets/ec4815af-e477-480b-b9fa-c490b74772b8" />
+        <img width="200" alt="dnu_logo" src="https://github.com/user-attachments/assets/2bcb1a6c-774c-4e7d-b14d-8c53dbb4067f" />
     </p>
 
 [![AIoTLab](https://img.shields.io/badge/AIoTLab-green?style=for-the-badge)](https://www.facebook.com/DNUAIoTLab)
@@ -58,36 +59,54 @@ Hệ thống quản lý sách - thư viện qua mạng được xây dựng nh�
 
 ## 3. Hình ảnh các chức năng
 
-<!-- Giữ nguyên phần hình ảnh logo -->
-<p align="center">
-    <img src="docs/aiotlab_logo.png" alt="AIoTLab Logo" width="170"/>
-    <img src="docs/fitdnu_logo.png" alt="AIoTLab Logo" width="180"/>
-    <img src="docs/dnu_logo.png" alt="DaiNam University Logo" width="200"/>
-</p>
-
 **Hình 1: <img src="https://img.icons8.com/ios-filled/24/000000/login-rounded-right.png"/> Giao diện đăng nhập**
 <p align="center">
-    <img src="docs/screenshot_login.png" alt="Giao diện đăng nhập" width="600"/>
+    <img width="398" height="301" alt="image" src="https://github.com/user-attachments/assets/ccf3e979-8caa-4072-9bef-500fc2d8bf28" />
 </p>
 
-**Hình 2: <img src="https://img.icons8.com/ios-filled/24/000000/books.png"/> Giao diện quản lý sách**
+**Hình 2: <img src="https://img.icons8.com/ios-filled/24/000000/login-rounded-right.png"/> Giao diện đăng ký**
 <p align="center">
-    <img src="docs/screenshot_bookmanager.png" alt="Giao diện quản lý sách" width="600"/>
+    <img width="468" height="381" alt="image" src="https://github.com/user-attachments/assets/ef5211ac-ef03-4bbd-aefb-25b2e784a27d" />
+   </p>
+
+**Hình 3: <img src="https://img.icons8.com/ios-filled/24/000000/books.png"/> Giao diện admin**
+<p align="center">
+   <img width="872" height="569" alt="image" src="https://github.com/user-attachments/assets/e79b3b06-ccd3-47cb-8440-ce89c974c3b0" />
 </p>
 
-**Hình 3: <img src="https://img.icons8.com/ios-filled/24/000000/user-group-man-man.png"/> Giao diện quản lý người dùng**
+**Hình 4: <img src="https://img.icons8.com/ios-filled/24/000000/user-group-man-man.png"/> Giao diện quản lý người dùng**
 <p align="center">
-    <img src="docs/screenshot_usermanager.png" alt="Giao diện quản lý người dùng" width="600"/>
+    <img width="600" alt="image" src="https://github.com/user-attachments/assets/b51d41fd-d870-439f-8d7b-97397fc1d1b3" />
 </p>
 
-**Hình 4: <img src="https://img.icons8.com/ios-filled/24/000000/borrow-book.png"/> Giao diện mượn/trả sách**
+**Hình 5: <img src="https://img.icons8.com/ios-filled/24/000000/borrow-book.png"/> Giao diện quản lý mượn/trả sách**
 <p align="center">
-    <img src="docs/screenshot_borrowclient.png" alt="Giao diện mượn trả sách" width="600"/>
+<img width="1174" height="674" alt="image" src="https://github.com/user-attachments/assets/5e95d1dc-110d-45e7-b278-e852123ab339" />
 </p>
 
-**Hình 5: <img src="https://img.icons8.com/ios-filled/24/000000/invoice.png"/> Giao diện hóa đơn mượn sách**
+**Hình 6: <img src="https://img.icons8.com/ios-filled/24/000000/borrow-book.png"/> Giao diện quản lý sách**
 <p align="center">
-    <img src="docs/screenshot_invoice.png" alt="Giao diện hóa đơn mượn sách" width="600"/>
+    <img width="859" height="579" alt="image" src="https://github.com/user-attachments/assets/c477e656-acca-4453-b306-bb9f9f4d7ba0" />
+</p> 
+
+**Hình 7: <img src="https://img.icons8.com/ios-filled/24/000000/invoice.png"/> Giao diện hóa đơn mượn sách**
+<p align="center">
+   <img width="875" height="381" alt="image" src="https://github.com/user-attachments/assets/7061d8d5-ebc2-4751-bddb-0d77c26e7048" />
+</p>
+
+**Hình 8: <img src="https://img.icons8.com/ios-filled/24/000000/invoice.png"/> Giao diện đăng ký mượn sách**
+<p align="center">
+ <img width="570" height="507" alt="image" src="https://github.com/user-attachments/assets/52195c7a-605c-4362-95df-710694587615" />
+</p>
+
+**Hình 9: <img src="https://img.icons8.com/ios-filled/24/000000/invoice.png"/> Giao diện thêm sách vào yêu thích**
+<p align="center">
+   <img width="673" height="388" alt="image" src="https://github.com/user-attachments/assets/7f37321a-66d0-4af3-9d74-57de8c82a956" />
+</p>
+
+**Hình 10: <img src="https://img.icons8.com/ios-filled/24/000000/invoice.png"/> Giao diện lịch sử hoạt động**
+<p align="center">
+   <img width="674" height="382" alt="image" src="https://github.com/user-attachments/assets/3f78437e-f2e0-4d54-aa95-5cfba6ef9d39" />
 </p>
 
 ## 4. Hướng dẫn cài đặt và sử dụng
