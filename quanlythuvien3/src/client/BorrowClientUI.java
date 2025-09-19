@@ -111,7 +111,7 @@ public class BorrowClientUI extends JFrame {
         JScrollPane scroll = new JScrollPane(returnTable);
         scroll.setBorder(BorderFactory.createEmptyBorder(10, 18, 10, 18));
 
-        // Bottom: Số lượng và nút trả sách
+        // Bottom: Số lượng và nút trả sách, thêm nút quay lại
         JPanel bottomPanel = new JPanel();
         bottomPanel.setBackground(new Color(232, 242, 255));
         GroupLayout bottomLayout = new GroupLayout(bottomPanel);
@@ -127,15 +127,22 @@ public class BorrowClientUI extends JFrame {
         btnReturn.setForeground(Color.WHITE);
         btnReturn.setFont(new Font("Segoe UI", Font.BOLD, 15));
 
+        JButton btnBack = new JButton("Quay lại");
+        btnBack.setBackground(new Color(0, 102, 204));
+        btnBack.setForeground(Color.WHITE);
+        btnBack.setFont(new Font("Segoe UI", Font.BOLD, 15));
+
         bottomLayout.setHorizontalGroup(
             bottomLayout.createSequentialGroup()
                 .addComponent(lblBorrowCount)
-                .addGap(0, 800, Short.MAX_VALUE)
+                .addGap(0, 600, Short.MAX_VALUE)
+                .addComponent(btnBack, GroupLayout.PREFERRED_SIZE, 130, GroupLayout.PREFERRED_SIZE)
                 .addComponent(btnReturn, GroupLayout.PREFERRED_SIZE, 130, GroupLayout.PREFERRED_SIZE)
         );
         bottomLayout.setVerticalGroup(
             bottomLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
                 .addComponent(lblBorrowCount)
+                .addComponent(btnBack)
                 .addComponent(btnReturn)
         );
 
@@ -207,6 +214,12 @@ public class BorrowClientUI extends JFrame {
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Lỗi trả sách: " + ex.getMessage());
             }
+        });
+
+        btnBack.addActionListener(e -> {
+            setVisible(false);
+            dispose();
+            // Không tạo mới AdminUI, chỉ đóng giao diện này để quay về giao diện admin gốc.
         });
 
         loadReturnList();

@@ -145,10 +145,11 @@ public class ClientUI extends JFrame {
         );
 
         // Table
-        String[] cols = {"ID sách", "Tên sách", "Tác giả", "Nhà XB", "Năm XB", "Thể loại", "SL", "Thao tác"};
+        String[] cols = {"ID sách", "Tên sách", "Tác giả", "Nhà XB", "Năm XB", "Thể loại", "SL", "Yêu thích", "Mượn"};
         tableModel = new DefaultTableModel(cols, 0) {
             public boolean isCellEditable(int row, int col) {
-                return col == 7;
+                // Chỉ cho phép thao tác ở cột "Yêu thích" và "Mượn"
+                return col == 7 || col == 8;
             }
         };
         table = new JTable(tableModel);
@@ -156,6 +157,63 @@ public class ClientUI extends JFrame {
         table.setFont(new Font("Segoe UI", Font.PLAIN, 15));
         table.getTableHeader().setBackground(new Color(0, 102, 204));
         table.getTableHeader().setForeground(Color.WHITE);
+
+        // Renderer cho nút Yêu thích và Mượn
+        table.getColumn("Yêu thích").setCellRenderer(new TableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable tbl, Object value, boolean isSelected, boolean hasFocus, int row, int col) {
+                JButton btn = new JButton("Yêu thích");
+                btn.setBackground(new Color(255, 153, 51));
+                btn.setForeground(Color.WHITE);
+                btn.setEnabled(true);
+                return btn;
+            }
+        });
+        table.getColumn("Yêu thích").setCellEditor(new DefaultCellEditor(new JCheckBox()) {
+            private JButton btn = new JButton("Yêu thích");
+            {
+                btn.setBackground(new Color(255, 153, 51));
+                btn.setForeground(Color.WHITE);
+                btn.addActionListener(e -> {
+                    int row = table.getEditingRow();
+                    String bookId = table.getValueAt(row, 0).toString();
+                    fireEditingStopped();
+                    addToFavorite(bookId);
+                });
+            }
+            @Override
+            public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+                return btn;
+            }
+        });
+
+        table.getColumn("Mượn").setCellRenderer(new TableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable tbl, Object value, boolean isSelected, boolean hasFocus, int row, int col) {
+                JButton btn = new JButton("Mượn");
+                btn.setBackground(new Color(0, 153, 76));
+                btn.setForeground(Color.WHITE);
+                btn.setEnabled(true);
+                return btn;
+            }
+        });
+        table.getColumn("Mượn").setCellEditor(new DefaultCellEditor(new JCheckBox()) {
+            private JButton btn = new JButton("Mượn");
+            {
+                btn.setBackground(new Color(0, 153, 76));
+                btn.setForeground(Color.WHITE);
+                btn.addActionListener(e -> {
+                    int row = table.getEditingRow();
+                    String bookId = table.getValueAt(row, 0).toString();
+                    fireEditingStopped();
+                    borrowBook(bookId);
+                });
+            }
+            @Override
+            public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+                return btn;
+            }
+        });
 
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 18, 10, 18));
@@ -349,10 +407,27 @@ public class ClientUI extends JFrame {
                     });
                 }
                 JTable tbl = new JTable(model);
+                tbl.setRowHeight(28);
+                tbl.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+                tbl.getTableHeader().setBackground(new Color(0, 102, 204));
+                tbl.getTableHeader().setForeground(Color.WHITE);
+
+                JPanel panel = new JPanel();
+                panel.setBackground(new Color(245, 248, 255));
+                panel.setLayout(new BorderLayout());
+                JLabel lbl = new JLabel("Lịch sử hoạt động", SwingConstants.CENTER);
+                lbl.setFont(new Font("Segoe UI", Font.BOLD, 20));
+                lbl.setForeground(new Color(0, 102, 204));
+                lbl.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+                panel.add(lbl, BorderLayout.NORTH);
                 JScrollPane scroll = new JScrollPane(tbl);
+                scroll.setBorder(BorderFactory.createEmptyBorder(10, 18, 10, 18));
+                panel.add(scroll, BorderLayout.CENTER);
+
                 JDialog dialog = new JDialog(this, "Lịch sử hoạt động", true);
-                dialog.setSize(600, 400);
-                dialog.add(scroll);
+                dialog.setContentPane(panel);
+                dialog.setMinimumSize(new Dimension(700, 400));
+                dialog.setPreferredSize(new Dimension(900, 500));
                 dialog.setLocationRelativeTo(this);
                 dialog.setVisible(true);
             } else {
@@ -437,7 +512,8 @@ public class ClientUI extends JFrame {
                     rs.getString("year"),
                     rs.getString("category"),
                     rs.getInt("quantity"),
-                    "" // placeholder cho thao tác
+                    "Yêu thích",
+                    "Mượn"
                 });
             }
         } catch (Exception ex) {
@@ -472,31 +548,37 @@ public class ClientUI extends JFrame {
                 return col == 7;
             }
         };
+        favTable.setRowHeight(28);
+        favTable.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        favTable.getTableHeader().setBackground(new Color(0, 102, 204));
+        favTable.getTableHeader().setForeground(Color.WHITE);
+
         favTable.getColumn("Xóa").setCellRenderer(new TableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable tbl, Object value, boolean isSelected, boolean hasFocus, int row, int col) {
                 JButton btn = new JButton("Xóa");
-                btn.setBackground(Color.RED);
+                btn.setBackground(new Color(204, 0, 0));
                 btn.setForeground(Color.WHITE);
-                btn.setEnabled(false); // chỉ hiển thị
+                btn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+                btn.setEnabled(false);
                 return btn;
             }
         });
         favTable.getColumn("Xóa").setCellEditor(new DefaultCellEditor(new JCheckBox()) {
             private JButton btn = new JButton("Xóa");
             {
-                btn.setBackground(Color.RED);
+                btn.setBackground(new Color(204, 0, 0));
                 btn.setForeground(Color.WHITE);
+                btn.setFont(new Font("Segoe UI", Font.BOLD, 14));
                 btn.addActionListener(e -> {
                     int row = favTable.getEditingRow();
                     String bookId = null;
                     if (row >= 0 && row < favTable.getRowCount()) {
                         bookId = favTable.getValueAt(row, 0).toString();
                     }
-                    fireEditingStopped(); // Dừng editor trước khi xóa dòng
+                    fireEditingStopped();
                     if (bookId != null) {
                         removeFromFavorite(bookId);
-                        // Tìm lại dòng chứa bookId và xóa đúng dòng đó (nếu còn)
                         int removeIdx = -1;
                         for (int i = 0; i < favTable.getRowCount(); i++) {
                             if (bookId.equals(favTable.getValueAt(i, 0).toString())) {
@@ -515,10 +597,23 @@ public class ClientUI extends JFrame {
                 return btn;
             }
         });
+
+        JPanel panel = new JPanel();
+        panel.setBackground(new Color(245, 248, 255));
+        panel.setLayout(new BorderLayout());
+        JLabel lbl = new JLabel("Danh sách sách yêu thích", SwingConstants.CENTER);
+        lbl.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        lbl.setForeground(new Color(0, 102, 204));
+        lbl.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        panel.add(lbl, BorderLayout.NORTH);
         JScrollPane scroll = new JScrollPane(favTable);
+        scroll.setBorder(BorderFactory.createEmptyBorder(10, 18, 10, 18));
+        panel.add(scroll, BorderLayout.CENTER);
+
         JDialog dialog = new JDialog(this, "Danh sách sách yêu thích", true);
-        dialog.setSize(700, 400);
-        dialog.add(scroll);
+        dialog.setContentPane(panel);
+        dialog.setMinimumSize(new Dimension(700, 400));
+        dialog.setPreferredSize(new Dimension(900, 500));
         dialog.setLocationRelativeTo(this);
         dialog.setVisible(true);
     }
@@ -569,70 +664,81 @@ public class ClientUI extends JFrame {
             return;
         }
 
-        // Hiển thị dialog đăng ký mượn sách
+        // Hiển thị dialog đăng ký mượn sách với GridBagLayout và responsive, các ô nhập dài hơn
         JDialog dialog = new JDialog(this, "Đăng ký mượn sách", true);
-        dialog.setSize(420, 400);
-        dialog.setLayout(null);
+        dialog.setMinimumSize(new Dimension(500, 480));
+        dialog.setPreferredSize(new Dimension(600, 520));
+
+        JPanel panel = new JPanel();
+        panel.setBackground(new Color(245, 248, 255));
+        dialog.setContentPane(panel);
+        GridBagLayout gbl = new GridBagLayout();
+        panel.setLayout(gbl);
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 12, 10, 12);
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
 
         JLabel lUser = new JLabel("Tên người mượn:");
-        lUser.setBounds(20, 20, 120, 25);
+        lUser.setForeground(new Color(0, 51, 102));
         JTextField txtUser = new JTextField(userInfo[0]);
-        txtUser.setBounds(150, 20, 220, 25);
         txtUser.setEditable(false);
+        txtUser.setBackground(Color.WHITE);
 
         JLabel lPhone = new JLabel("Số điện thoại:");
-        lPhone.setBounds(20, 55, 120, 25);
+        lPhone.setForeground(new Color(0, 51, 102));
         JTextField txtPhone = new JTextField(userInfo[1]);
-        txtPhone.setBounds(150, 55, 220, 25);
         txtPhone.setEditable(false);
+        txtPhone.setBackground(Color.WHITE);
 
         JLabel lEmail = new JLabel("Email:");
-        lEmail.setBounds(20, 90, 120, 25);
+        lEmail.setForeground(new Color(0, 51, 102));
         JTextField txtEmail = new JTextField(userInfo[2]);
-        txtEmail.setBounds(150, 90, 220, 25);
         txtEmail.setEditable(false);
+        txtEmail.setBackground(Color.WHITE);
 
         JLabel lBook = new JLabel("Tên sách:");
-        lBook.setBounds(20, 125, 120, 25);
+        lBook.setForeground(new Color(0, 51, 102));
         JTextField txtBook = new JTextField(bookInfo[0]);
-        txtBook.setBounds(150, 125, 220, 25);
         txtBook.setEditable(false);
+        txtBook.setBackground(Color.WHITE);
 
         JLabel lAuthor = new JLabel("Tác giả:");
-        lAuthor.setBounds(20, 160, 120, 25);
+        lAuthor.setForeground(new Color(0, 51, 102));
         JTextField txtAuthor = new JTextField(bookInfo[1]);
-        txtAuthor.setBounds(150, 160, 220, 25);
         txtAuthor.setEditable(false);
+        txtAuthor.setBackground(Color.WHITE);
 
         JLabel lPublisher = new JLabel("Nhà XB:");
-        lPublisher.setBounds(20, 195, 120, 25);
+        lPublisher.setForeground(new Color(0, 51, 102));
         JTextField txtPublisher = new JTextField(bookInfo[2]);
-        txtPublisher.setBounds(150, 195, 220, 25);
         txtPublisher.setEditable(false);
+        txtPublisher.setBackground(Color.WHITE);
 
         JLabel lYear = new JLabel("Năm XB:");
-        lYear.setBounds(20, 230, 120, 25);
+        lYear.setForeground(new Color(0, 51, 102));
         JTextField txtYear = new JTextField(bookInfo[3]);
-        txtYear.setBounds(150, 230, 220, 25);
         txtYear.setEditable(false);
+        txtYear.setBackground(Color.WHITE);
 
         JLabel lCategory = new JLabel("Thể loại:");
-        lCategory.setBounds(20, 265, 120, 25);
+        lCategory.setForeground(new Color(0, 51, 102));
         JTextField txtCategory = new JTextField(bookInfo[4]);
-        txtCategory.setBounds(150, 265, 220, 25);
         txtCategory.setEditable(false);
+        txtCategory.setBackground(Color.WHITE);
 
         JLabel lBorrowDate = new JLabel("Ngày mượn:");
-        lBorrowDate.setBounds(20, 300, 120, 25);
+        lBorrowDate.setForeground(new Color(0, 51, 102));
         JTextField txtBorrowDate = new JTextField(java.time.LocalDate.now().toString());
-        txtBorrowDate.setBounds(150, 300, 100, 25);
         txtBorrowDate.setEditable(false);
+        txtBorrowDate.setBackground(Color.WHITE);
 
         JLabel lReturnDate = new JLabel("Ngày trả:");
-        lReturnDate.setBounds(20, 335, 120, 25);
+        lReturnDate.setForeground(new Color(0, 51, 102));
         SpinnerDateModel dateModel = new SpinnerDateModel();
         JSpinner spReturnDate = new JSpinner(dateModel);
-        spReturnDate.setBounds(150, 335, 120, 25);
         JSpinner.DateEditor dateEditor = new JSpinner.DateEditor(spReturnDate, "yyyy-MM-dd");
         spReturnDate.setEditor(dateEditor);
         // Giới hạn tối đa 7 ngày
@@ -643,19 +749,86 @@ public class ClientUI extends JFrame {
         dateModel.setValue(java.sql.Date.valueOf(java.time.LocalDate.now().plusDays(1)));
 
         JButton btnReg = new JButton("Đăng ký");
-        btnReg.setBounds(290, 335, 90, 25);
+        btnReg.setBackground(new Color(0, 153, 76));
+        btnReg.setForeground(Color.WHITE);
+        btnReg.setFont(new Font("Segoe UI", Font.BOLD, 15));
 
-        dialog.add(lUser); dialog.add(txtUser);
-        dialog.add(lPhone); dialog.add(txtPhone);
-        dialog.add(lEmail); dialog.add(txtEmail);
-        dialog.add(lBook); dialog.add(txtBook);
-        dialog.add(lAuthor); dialog.add(txtAuthor);
-        dialog.add(lPublisher); dialog.add(txtPublisher);
-        dialog.add(lYear); dialog.add(txtYear);
-        dialog.add(lCategory); dialog.add(txtCategory);
-        dialog.add(lBorrowDate); dialog.add(txtBorrowDate);
-        dialog.add(lReturnDate); dialog.add(spReturnDate);
-        dialog.add(btnReg);
+        int labelWidth = 120;
+        int fieldWidth = 340;
+
+        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.0;
+        panel.add(lUser, gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        txtUser.setPreferredSize(new Dimension(fieldWidth, 28));
+        panel.add(txtUser, gbc);
+
+        gbc.gridx = 0; gbc.gridy++;
+        gbc.weightx = 0.0;
+        panel.add(lPhone, gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        txtPhone.setPreferredSize(new Dimension(fieldWidth, 28));
+        panel.add(txtPhone, gbc);
+
+        gbc.gridx = 0; gbc.gridy++;
+        gbc.weightx = 0.0;
+        panel.add(lEmail, gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        txtEmail.setPreferredSize(new Dimension(fieldWidth, 28));
+        panel.add(txtEmail, gbc);
+
+        gbc.gridx = 0; gbc.gridy++;
+        gbc.weightx = 0.0;
+        panel.add(lBook, gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        txtBook.setPreferredSize(new Dimension(fieldWidth, 28));
+        panel.add(txtBook, gbc);
+
+        gbc.gridx = 0; gbc.gridy++;
+        gbc.weightx = 0.0;
+        panel.add(lAuthor, gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        txtAuthor.setPreferredSize(new Dimension(fieldWidth, 28));
+        panel.add(txtAuthor, gbc);
+
+        gbc.gridx = 0; gbc.gridy++;
+        gbc.weightx = 0.0;
+        panel.add(lPublisher, gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        txtPublisher.setPreferredSize(new Dimension(fieldWidth, 28));
+        panel.add(txtPublisher, gbc);
+
+        gbc.gridx = 0; gbc.gridy++;
+        gbc.weightx = 0.0;
+        panel.add(lYear, gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        txtYear.setPreferredSize(new Dimension(fieldWidth, 28));
+        panel.add(txtYear, gbc);
+
+        gbc.gridx = 0; gbc.gridy++;
+        gbc.weightx = 0.0;
+        panel.add(lCategory, gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        txtCategory.setPreferredSize(new Dimension(fieldWidth, 28));
+        panel.add(txtCategory, gbc);
+
+        gbc.gridx = 0; gbc.gridy++;
+        gbc.weightx = 0.0;
+        panel.add(lBorrowDate, gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        txtBorrowDate.setPreferredSize(new Dimension(fieldWidth, 28));
+        panel.add(txtBorrowDate, gbc);
+
+        gbc.gridx = 0; gbc.gridy++;
+        gbc.weightx = 0.0;
+        panel.add(lReturnDate, gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        spReturnDate.setPreferredSize(new Dimension(fieldWidth, 28));
+        panel.add(spReturnDate, gbc);
+
+        gbc.gridx = 1; gbc.gridy++;
+        gbc.anchor = GridBagConstraints.EAST;
+        gbc.weightx = 1.0;
+        panel.add(btnReg, gbc);
 
         btnReg.addActionListener(ev -> {
             String borrowDate = txtBorrowDate.getText();
@@ -680,6 +853,7 @@ public class ClientUI extends JFrame {
             }
         });
 
+        dialog.pack();
         dialog.setLocationRelativeTo(this);
         dialog.setVisible(true);
     }
@@ -726,10 +900,27 @@ public class ClientUI extends JFrame {
             return;
         }
         JTable tbl = new JTable(model);
+        tbl.setRowHeight(28);
+        tbl.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        tbl.getTableHeader().setBackground(new Color(0, 102, 204));
+        tbl.getTableHeader().setForeground(Color.WHITE);
+
+        JPanel panel = new JPanel();
+        panel.setBackground(new Color(245, 248, 255));
+        panel.setLayout(new BorderLayout());
+        JLabel lbl = new JLabel("Danh sách hóa đơn mượn sách", SwingConstants.CENTER);
+        lbl.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        lbl.setForeground(new Color(255, 102, 0));
+        lbl.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        panel.add(lbl, BorderLayout.NORTH);
         JScrollPane scroll = new JScrollPane(tbl);
+        scroll.setBorder(BorderFactory.createEmptyBorder(10, 18, 10, 18));
+        panel.add(scroll, BorderLayout.CENTER);
+
         JDialog dialog = new JDialog(this, "Danh sách hóa đơn mượn sách", true);
-        dialog.setSize(900, 400);
-        dialog.add(scroll);
+        dialog.setContentPane(panel);
+        dialog.setMinimumSize(new Dimension(900, 400));
+        dialog.setPreferredSize(new Dimension(1100, 500));
         dialog.setLocationRelativeTo(this);
         dialog.setVisible(true);
     }
