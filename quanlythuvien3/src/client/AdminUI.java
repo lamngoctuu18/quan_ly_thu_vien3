@@ -2,113 +2,167 @@ package client;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
 
 public class AdminUI extends JFrame {
+    private JPanel mainContent;
+    private CardLayout cardLayout;
+    private JButton currentSelectedButton;
+    
     public AdminUI() {
-        setTitle("Giao diện admin");
-        setMinimumSize(new Dimension(700, 400));
-        setPreferredSize(new Dimension(900, 600));
+        setTitle("Quản lý thư viện");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setMinimumSize(new Dimension(1200, 700));
 
-        JPanel mainPanel = new JPanel();
-        mainPanel.setBackground(new Color(232, 242, 255));
-        setContentPane(mainPanel);
+        // Main layout using BorderLayout
+        setLayout(new BorderLayout());
 
-        GroupLayout layout = new GroupLayout(mainPanel);
-        mainPanel.setLayout(layout);
-        layout.setAutoCreateGaps(true);
-        layout.setAutoCreateContainerGaps(true);
+        // Top header panel
+        JPanel headerPanel = createHeaderPanel();
+        add(headerPanel, BorderLayout.NORTH);
 
-        // Thanh tiêu đề và nút đăng xuất
-        JPanel topPanel = new JPanel();
-        topPanel.setBackground(new Color(232, 242, 255));
-        GroupLayout topLayout = new GroupLayout(topPanel);
-        topPanel.setLayout(topLayout);
-        topLayout.setAutoCreateGaps(true);
-        topLayout.setAutoCreateContainerGaps(true);
+        // Left menu panel
+        JPanel menuPanel = createMenuPanel();
+        add(menuPanel, BorderLayout.WEST);
 
-        JLabel lblTitle = new JLabel("Giao diện admin");
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 22));
-        lblTitle.setForeground(new Color(0, 51, 102));
+        // Main content panel with CardLayout
+        cardLayout = new CardLayout();
+        mainContent = new JPanel(cardLayout);
+        mainContent.setBackground(Color.WHITE);
+        add(mainContent, BorderLayout.CENTER);
+
+        // Only add JPanel/JComponent, not JFrame
+        DashboardUI dashboard = new DashboardUI();
+
+        JPanel bookManagerPanel = new JPanel(new BorderLayout());
+        BookManagerUI bookManagerUI = new BookManagerUI();
+        bookManagerPanel.add(bookManagerUI.getContentPane(), BorderLayout.CENTER);
+
+        JPanel userManagerPanel = new JPanel(new BorderLayout());
+        UserManagerUI userManagerUI = new UserManagerUI();
+        userManagerPanel.add(userManagerUI.getContentPane(), BorderLayout.CENTER);
+
+        JPanel borrowClientPanel = new JPanel(new BorderLayout());
+        BorrowClientUI borrowClientUI = new BorrowClientUI();
+        borrowClientPanel.add(borrowClientUI.getContentPane(), BorderLayout.CENTER);
+
+        JPanel borrowRequestPanel = new JPanel(new BorderLayout());
+        BorrowRequestManagerUI borrowRequestUI = new BorrowRequestManagerUI();
+        borrowRequestPanel.add(borrowRequestUI, BorderLayout.CENTER);
+
+        mainContent.add(dashboard, "DASHBOARD");
+        mainContent.add(bookManagerPanel, "BOOKS");
+        mainContent.add(userManagerPanel, "USERS");
+        mainContent.add(borrowClientPanel, "BORROWS");
+        mainContent.add(borrowRequestPanel, "BORROW_REQUESTS");
+
+        setLocationRelativeTo(null);
+    }
+
+    private JPanel createHeaderPanel() {
+        JPanel header = new JPanel(new BorderLayout());
+        header.setBackground(new Color(0, 102, 204));
+        header.setPreferredSize(new Dimension(getWidth(), 60));
+
+        JLabel title = new JLabel("Hệ thống quản lý thư viện");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        title.setForeground(Color.WHITE);
+        title.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
+        header.add(title, BorderLayout.WEST);
+
         JButton btnLogout = new JButton("Đăng xuất");
-        btnLogout.setBackground(new Color(255, 102, 0));
-        btnLogout.setForeground(Color.WHITE);
-        btnLogout.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        btnLogout.setPreferredSize(new Dimension(120, 32));
-
-        topLayout.setHorizontalGroup(
-            topLayout.createSequentialGroup()
-                .addComponent(lblTitle)
-                .addGap(0, 600, Short.MAX_VALUE)
-                .addComponent(btnLogout, GroupLayout.PREFERRED_SIZE, 120, GroupLayout.PREFERRED_SIZE)
-        );
-        topLayout.setVerticalGroup(
-            topLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                .addComponent(lblTitle)
-                .addComponent(btnLogout)
-        );
-
-        // Panel chứa các nút chức năng
-        JPanel centerPanel = new JPanel();
-        centerPanel.setBackground(new Color(245, 248, 255));
-        GroupLayout centerLayout = new GroupLayout(centerPanel);
-        centerPanel.setLayout(centerLayout);
-        centerLayout.setAutoCreateGaps(true);
-        centerLayout.setAutoCreateContainerGaps(true);
-
-        JButton btnBook = new JButton("Quản lý sách");
-        btnBook.setBackground(new Color(0, 153, 76));
-        btnBook.setForeground(Color.WHITE);
-        btnBook.setFont(new Font("Segoe UI", Font.BOLD, 17));
-        JButton btnUser = new JButton("Quản lý người dùng");
-        btnUser.setBackground(new Color(0, 102, 204));
-        btnUser.setForeground(Color.WHITE);
-        btnUser.setFont(new Font("Segoe UI", Font.BOLD, 17));
-        JButton btnBorrow = new JButton("Quản lý mượn / trả");
-        btnBorrow.setBackground(new Color(255, 153, 51));
-        btnBorrow.setForeground(Color.WHITE);
-        btnBorrow.setFont(new Font("Segoe UI", Font.BOLD, 17));
-
-        centerLayout.setHorizontalGroup(
-            centerLayout.createParallelGroup(GroupLayout.Alignment.CENTER)
-                .addGap(0, 300, Short.MAX_VALUE)
-                .addComponent(btnBook, GroupLayout.PREFERRED_SIZE, 260, GroupLayout.PREFERRED_SIZE)
-                .addComponent(btnUser, GroupLayout.PREFERRED_SIZE, 260, GroupLayout.PREFERRED_SIZE)
-                .addComponent(btnBorrow, GroupLayout.PREFERRED_SIZE, 260, GroupLayout.PREFERRED_SIZE)
-        );
-        centerLayout.setVerticalGroup(
-            centerLayout.createSequentialGroup()
-                .addGap(40)
-                .addComponent(btnBook, GroupLayout.PREFERRED_SIZE, 48, GroupLayout.PREFERRED_SIZE)
-                .addGap(20)
-                .addComponent(btnUser, GroupLayout.PREFERRED_SIZE, 48, GroupLayout.PREFERRED_SIZE)
-                .addGap(20)
-                .addComponent(btnBorrow, GroupLayout.PREFERRED_SIZE, 48, GroupLayout.PREFERRED_SIZE)
-        );
-
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(GroupLayout.Alignment.CENTER)
-                .addComponent(topPanel)
-                .addComponent(centerPanel)
-        );
-        layout.setVerticalGroup(
-            layout.createSequentialGroup()
-                .addComponent(topPanel, GroupLayout.PREFERRED_SIZE, 60, GroupLayout.PREFERRED_SIZE)
-                .addGap(30)
-                .addComponent(centerPanel, GroupLayout.PREFERRED_SIZE, 300, GroupLayout.PREFERRED_SIZE)
-        );
-
+        styleButton(btnLogout, new Color(255, 102, 0));
         btnLogout.addActionListener(e -> {
             dispose();
             SwingUtilities.invokeLater(() -> app.MainApp.main(null));
         });
 
-        btnBook.addActionListener(e -> new BookManagerUI().setVisible(true));
-        btnUser.addActionListener(e -> new UserManagerUI().setVisible(true));
-        btnBorrow.addActionListener(e -> new BorrowClientUI().setVisible(true));
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        rightPanel.setBackground(new Color(0, 102, 204));
+        rightPanel.add(btnLogout);
+        header.add(rightPanel, BorderLayout.EAST);
 
-        pack();
-        setLocationRelativeTo(null);
+        return header;
+    }
+
+    private JPanel createMenuPanel() {
+        JPanel menuPanel = new JPanel();
+        menuPanel.setPreferredSize(new Dimension(250, getHeight()));
+        menuPanel.setBackground(new Color(51, 51, 51));
+        menuPanel.setLayout(new BoxLayout(menuPanel, BoxLayout.Y_AXIS));
+
+        // Menu buttons
+        JButton btnDashboard = createMenuButton("Dashboard", "DASHBOARD");
+        JButton btnBooks = createMenuButton("Quản lý sách", "BOOKS");
+        JButton btnUsers = createMenuButton("Quản lý người dùng", "USERS");
+        JButton btnBorrows = createMenuButton("Quản lý mượn/trả", "BORROWS");
+        JButton btnBorrowRequests = createMenuButton("Quản lý đăng ký mượn", "BORROW_REQUESTS");
+
+        // Add buttons to menu
+        menuPanel.add(Box.createVerticalStrut(20));
+        menuPanel.add(btnDashboard);
+        menuPanel.add(Box.createVerticalStrut(10));
+        menuPanel.add(btnBooks);
+        menuPanel.add(Box.createVerticalStrut(10));
+        menuPanel.add(btnUsers);
+        menuPanel.add(Box.createVerticalStrut(10));
+        menuPanel.add(btnBorrows);
+        menuPanel.add(Box.createVerticalStrut(10));
+        menuPanel.add(btnBorrowRequests);
+        menuPanel.add(Box.createVerticalGlue());
+
+        // Select dashboard by default
+        selectButton(btnDashboard);
+        
+        return menuPanel;
+    }
+
+    private JButton createMenuButton(String text, String cardName) {
+        JButton btn = new JButton(text);
+        btn.setPreferredSize(new Dimension(230, 40));
+        btn.setMaximumSize(new Dimension(230, 40));
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btn.setForeground(Color.WHITE);
+        btn.setBackground(new Color(51, 51, 51));
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setHorizontalAlignment(SwingConstants.LEFT);
+        btn.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
+
+        btn.addActionListener(e -> {
+            selectButton(btn);
+            cardLayout.show(mainContent, cardName);
+        });
+
+        btn.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                if (btn != currentSelectedButton) {
+                    btn.setBackground(new Color(70, 70, 70));
+                }
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                if (btn != currentSelectedButton) {
+                    btn.setBackground(new Color(51, 51, 51));
+                }
+            }
+        });
+
+        return btn;
+    }
+
+    private void selectButton(JButton btn) {
+        if (currentSelectedButton != null) {
+            currentSelectedButton.setBackground(new Color(51, 51, 51));
+        }
+        btn.setBackground(new Color(0, 102, 204));
+        currentSelectedButton = btn;
+    }
+
+    private void styleButton(JButton btn, Color bgColor) {
+        btn.setBackground(bgColor);
+        btn.setForeground(Color.WHITE);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btn.setFocusPainted(false);
+        btn.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
     }
 }

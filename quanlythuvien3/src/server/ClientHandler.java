@@ -66,6 +66,12 @@ public class ClientHandler extends Thread {
                     case "LIST_ACTIVITIES":
                         handleListActivities(parts);
                         break;
+                    case "LIST_FAVORITES":
+                        handleListFavorites(parts);
+                        break;
+                    case "LIST_BORROWED":
+                        handleListBorrowed(parts);
+                        break;
                     case "EXIT":
                         out.println("BYE");
                         socket.close();
@@ -91,29 +97,24 @@ public class ClientHandler extends Thread {
         if (parts.length < 3) { out.println("LOGIN_FAIL|Missing params"); return; }
         String username = parts[1];
         String password = parts[2];
+
+        // Special handling for admin login
+        if ("admin".equals(username) && "admin".equals(password)) {
+            out.println("LOGIN_SUCCESS|1|admin");
+            return;
+        }
+
         try (Connection conn = getConnection()) {
             PreparedStatement ps = conn.prepareStatement(
-                "SELECT id, role, username, password FROM users WHERE username=? AND password=?");
+                "SELECT id, role FROM users WHERE username=? AND password=?");
             ps.setString(1, username);
             ps.setString(2, password);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 int id = rs.getInt("id");
                 String role = rs.getString("role");
-                String dbUser = rs.getString("username");
-                String dbPass = rs.getString("password");
-                System.out.println("LOGIN DB: " + dbUser + " | " + dbPass + " | " + role);
                 out.println("LOGIN_SUCCESS|" + id + "|" + role);
             } else {
-                // Thêm log chi tiết để kiểm tra nguyên nhân
-                PreparedStatement ps2 = conn.prepareStatement("SELECT * FROM users WHERE username=?");
-                ps2.setString(1, username);
-                ResultSet rs2 = ps2.executeQuery();
-                if (rs2.next()) {
-                    System.out.println("LOGIN_FAIL: Tên đúng nhưng sai mật khẩu. DB pass=" + rs2.getString("password"));
-                } else {
-                    System.out.println("LOGIN_FAIL: Không tìm thấy username=" + username);
-                }
                 out.println("LOGIN_FAIL|Invalid credentials");
             }
         } catch (Exception e) {
@@ -122,15 +123,16 @@ public class ClientHandler extends Thread {
     }
 
     private void handleRegister(String[] parts) {
-        if (parts.length < 5) { out.println("REGISTER_FAIL|Missing params"); return; }
+        if (parts.length < 6) { out.println("REGISTER_FAIL|Missing params"); return; }
         String username = parts[1];
         String password = parts[2];
         String phone = parts[3];
         String email = parts[4];
+        String avatar = parts.length > 5 ? parts[5] : "";
         String role = "user";
         try {
             UserDAO dao = new UserDAO();
-            int result = dao.createUser(username, password, role, phone, email);
+            int result = dao.createUser(username, password, role, phone, email, avatar);
             if (result > 0) {
                 out.println("REGISTER_SUCCESS");
             } else {
@@ -350,18 +352,66 @@ public class ClientHandler extends Thread {
         int userId = Integer.parseInt(parts[1]);
         try (Connection conn = getConnection()) {
             PreparedStatement ps = conn.prepareStatement(
-                "SELECT a.action, a.action_time, b.title FROM activities a LEFT JOIN books b ON a.book_id=b.id WHERE a.user_id=? ORDER BY a.action_time DESC");
+                "SELECT a.id, a.action, a.action_time, b.title FROM activities a LEFT JOIN books b ON a.book_id=b.id WHERE a.user_id=? ORDER BY a.action_time DESC LIMIT 50");
             ps.setInt(1, userId);
             ResultSet rs = ps.executeQuery();
-            StringBuilder sb = new StringBuilder("ACTIVITIES_RESULT|");
+            StringBuilder sb = new StringBuilder();
             while (rs.next()) {
-                sb.append(rs.getString("action")).append(",")
-                  .append(rs.getString("action_time")).append(",")
-                  .append(rs.getString("title")).append(";");
+                String id = rs.getString("id");
+                String action = rs.getString("action");
+                String time = rs.getString("action_time");
+                String title = rs.getString("title");
+                sb.append(id).append(" - ").append(title).append(" - ").append(action).append(" - ").append(time).append(";");
             }
-            out.println(sb.toString());
+            out.println("ACTIVITIES_LIST|" + sb.toString());
         } catch (Exception e) {
             out.println("ACTIVITIES_FAIL|" + e.getMessage());
         }
     }
+
+    private void handleListFavorites(String[] parts) {
+        // LIST_FAVORITES|userId
+        if (parts.length < 2) { out.println("FAVORITES_FAIL|Missing params"); return; }
+        int userId = Integer.parseInt(parts[1]);
+        try (Connection conn = getConnection()) {
+            PreparedStatement ps = conn.prepareStatement(
+                "SELECT b.id, b.title, b.author FROM books b INNER JOIN favorites f ON b.id = f.book_id WHERE f.user_id = ? ORDER BY f.added_date DESC");
+            ps.setInt(1, userId);
+            ResultSet rs = ps.executeQuery();
+            StringBuilder sb = new StringBuilder();
+            while (rs.next()) {
+                String id = rs.getString("id");
+                String title = rs.getString("title");
+                String author = rs.getString("author");
+                sb.append(id).append(" - ").append(title).append(" - ").append(author).append(";");
+            }
+            out.println("FAVORITES_LIST|" + sb.toString());
+        } catch (Exception e) {
+            out.println("FAVORITES_FAIL|" + e.getMessage());
+        }
+    }
+
+    private void handleListBorrowed(String[] parts) {
+        // LIST_BORROWED|userId
+        if (parts.length < 2) { out.println("BORROWED_FAIL|Missing params"); return; }
+        int userId = Integer.parseInt(parts[1]);
+        try (Connection conn = getConnection()) {
+            PreparedStatement ps = conn.prepareStatement(
+                "SELECT b.title, b.author, br.borrow_date, datetime(br.borrow_date, '+30 days') as due_date FROM borrows br INNER JOIN books b ON br.book_id = b.id WHERE br.user_id = ? AND br.return_date IS NULL");
+            ps.setInt(1, userId);
+            ResultSet rs = ps.executeQuery();
+            StringBuilder sb = new StringBuilder();
+            while (rs.next()) {
+                String title = rs.getString("title");
+                String author = rs.getString("author");
+                String borrowDate = rs.getString("borrow_date");
+                String dueDate = rs.getString("due_date");
+                sb.append(title).append(",").append(author).append(",").append(borrowDate).append(",").append(dueDate).append(";");
+            }
+            out.println("BORROWED_LIST|" + sb.toString());
+        } catch (Exception e) {
+            out.println("BORROWED_FAIL|" + e.getMessage());
+        }
+    }
 }
+

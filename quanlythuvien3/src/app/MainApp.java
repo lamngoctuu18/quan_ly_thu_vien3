@@ -7,6 +7,7 @@ import client.RegisterUI;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.*;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -37,12 +38,25 @@ public class MainApp {
 
         // Hiển thị giao diện đăng nhập
         SwingUtilities.invokeLater(() -> {
-            JFrame frame = new JFrame("Đăng nhập hệ thống thư viện");
+            JFrame frame = new JFrame("Hệ thống quản lý thư viện");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setSize(420, 320);
+            frame.setSize(500, 850);
+            frame.setMinimumSize(new Dimension(500, 750));
+            frame.setResizable(false);
 
-            JPanel panel = new JPanel();
-            panel.setBackground(new Color(232, 242, 255)); // màu nền xanh nhạt
+            // Main panel with gradient background
+            JPanel panel = new JPanel() {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    super.paintComponent(g);
+                    Graphics2D g2d = (Graphics2D) g;
+                    g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                    int w = getWidth(), h = getHeight();
+                    GradientPaint gp = new GradientPaint(0, 0, new Color(240, 248, 255), 0, h, new Color(230, 240, 250));
+                    g2d.setPaint(gp);
+                    g2d.fillRect(0, 0, w, h);
+                }
+            };
             frame.setContentPane(panel);
 
             // Sử dụng GroupLayout cho form đăng nhập
@@ -51,88 +65,258 @@ public class MainApp {
             layout.setAutoCreateGaps(true);
             layout.setAutoCreateContainerGaps(true);
 
+            // Header panel with logo and title
+            JPanel headerPanel = new JPanel();
+            headerPanel.setOpaque(false);
+            headerPanel.setLayout(new BoxLayout(headerPanel, BoxLayout.Y_AXIS));
+            
+            // Logo panel
+            JPanel logoPanel = new JPanel();
+            logoPanel.setOpaque(false);
+            logoPanel.setPreferredSize(new Dimension(180, 180));
+            
+            try {
+                ImageIcon originalIcon = new ImageIcon("c:\\Users\\84916\\Downloads\\logothuvien.jpg");
+                Image originalImage = originalIcon.getImage();
+                Image scaledImage = originalImage.getScaledInstance(160, 160, Image.SCALE_SMOOTH);
+                ImageIcon scaledIcon = new ImageIcon(scaledImage);
+                JLabel logoLabel = new JLabel(scaledIcon);
+                logoLabel.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(70, 130, 180), 3),
+                    BorderFactory.createEmptyBorder(5, 5, 5, 5)
+                ));
+                logoPanel.add(logoLabel);
+            } catch (Exception ex) {
+                JLabel logoLabel = new JLabel("📚 LIBRARY", SwingConstants.CENTER);
+                logoLabel.setForeground(new Color(70, 130, 180));
+                logoLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+                logoLabel.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(70, 130, 180), 3),
+                    BorderFactory.createEmptyBorder(30, 30, 30, 30)
+                ));
+                logoPanel.add(logoLabel);
+            }
+            
+            // Title panel
+            JPanel titlePanel = new JPanel();
+            titlePanel.setOpaque(false);
+            JLabel titleLabel = new JLabel("HỆ THỐNG QUẢN LÝ THƯ VIỆN", SwingConstants.CENTER);
+            titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
+            titleLabel.setForeground(new Color(70, 130, 180));
+            titlePanel.add(titleLabel);
+            
+            JLabel subtitleLabel = new JLabel("Đăng nhập để tiếp tục", SwingConstants.CENTER);
+            subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            subtitleLabel.setForeground(new Color(108, 117, 125));
+            
+            headerPanel.add(logoPanel);
+            headerPanel.add(Box.createVerticalStrut(10));
+            headerPanel.add(titlePanel);
+            headerPanel.add(Box.createVerticalStrut(5));
+            headerPanel.add(subtitleLabel);
+
+            // Form panel with modern styling
+            JPanel formPanel = new JPanel();
+            formPanel.setOpaque(false);
+            formPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(200, 200, 200), 1),
+                BorderFactory.createEmptyBorder(30, 40, 30, 40)
+            ));
+            formPanel.setBackground(new Color(255, 255, 255, 220));
+
+            JLabel lblRole = new JLabel("Vai trò:");
+            lblRole.setForeground(new Color(52, 58, 64));
+            lblRole.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            String[] roles = {"Người dùng", "Quản trị viên"};
+            JComboBox<String> cbRole = new JComboBox<>(roles);
+            cbRole.setBackground(Color.WHITE);
+            cbRole.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            cbRole.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(206, 212, 218), 1),
+                BorderFactory.createEmptyBorder(8, 12, 8, 12)
+            ));
+            cbRole.setPreferredSize(new Dimension(280, 40));
+
             JLabel lblUser = new JLabel("Tên đăng nhập:");
-            lblUser.setForeground(new Color(0, 51, 102));
-            JTextField txtUser = new JTextField(18);
-            txtUser.setBackground(new Color(255, 255, 255));
-            txtUser.setForeground(new Color(0, 51, 102));
+            lblUser.setForeground(new Color(52, 58, 64));
+            lblUser.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            JTextField txtUser = new JTextField(20);
+            txtUser.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(206, 212, 218), 1),
+                BorderFactory.createEmptyBorder(10, 12, 10, 12)
+            ));
+            txtUser.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            txtUser.setPreferredSize(new Dimension(280, 40));
 
             JLabel lblPass = new JLabel("Mật khẩu:");
-            lblPass.setForeground(new Color(0, 51, 102));
-            JPasswordField txtPass = new JPasswordField(18);
-            txtPass.setBackground(new Color(255, 255, 255));
-            txtPass.setForeground(new Color(0, 51, 102));
+            lblPass.setForeground(new Color(52, 58, 64));
+            lblPass.setFont(new Font("Segoe UI", Font.BOLD, 14));
 
-            JCheckBox chkShowPass = new JCheckBox("Hiện mật khẩu");
-            chkShowPass.setBackground(new Color(232, 242, 255));
-            chkShowPass.setForeground(new Color(0, 102, 204));
+            // Password panel with show/hide button
+            JPanel passPanel = new JPanel(new BorderLayout());
+            passPanel.setBackground(Color.WHITE);
+            passPanel.setBorder(BorderFactory.createLineBorder(new Color(206, 212, 218), 1));
+            passPanel.setPreferredSize(new Dimension(280, 40));
+            
+            final JPasswordField txtPass = new JPasswordField(20);
+            txtPass.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 5));
+            txtPass.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 
-            JButton btnLogin = new JButton("Đăng nhập");
-            btnLogin.setBackground(new Color(0, 102, 204));
+            final JToggleButton btnShowPass = new JToggleButton("👁");
+            btnShowPass.setFocusPainted(false);
+            btnShowPass.setBackground(Color.WHITE);
+            btnShowPass.setBorder(BorderFactory.createEmptyBorder(5, 8, 5, 12));
+            btnShowPass.setPreferredSize(new Dimension(40, 40));
+            btnShowPass.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+            
+            btnShowPass.addActionListener(e -> {
+                if (btnShowPass.isSelected()) {
+                    txtPass.setEchoChar((char) 0);
+                    btnShowPass.setText("🙈");
+                } else {
+                    txtPass.setEchoChar('●');
+                    btnShowPass.setText("👁");
+                }
+            });
+
+            passPanel.add(txtPass, BorderLayout.CENTER);
+            passPanel.add(btnShowPass, BorderLayout.EAST);
+
+            JLabel lblForgot = new JLabel("Quên mật khẩu?");
+            lblForgot.setForeground(new Color(70, 130, 180));
+            lblForgot.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            lblForgot.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+            lblForgot.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    lblForgot.setText("<html><u>Quên mật khẩu?</u></html>");
+                }
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    lblForgot.setText("Quên mật khẩu?");
+                }
+            });
+
+            JButton btnLogin = new JButton("ĐĂNG NHẬP");
+            btnLogin.setBackground(new Color(70, 130, 180));
             btnLogin.setForeground(Color.WHITE);
+            btnLogin.setBorder(BorderFactory.createEmptyBorder(12, 20, 12, 20));
+            btnLogin.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            btnLogin.setPreferredSize(new Dimension(280, 45));
+            btnLogin.setFocusPainted(false);
+            btnLogin.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            btnLogin.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    btnLogin.setBackground(new Color(60, 120, 170));
+                }
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    btnLogin.setBackground(new Color(70, 130, 180));
+                }
+            });
 
-            JButton btnRegister = new JButton("Đăng ký");
-            btnRegister.setBackground(new Color(0, 153, 76));
-            btnRegister.setForeground(Color.WHITE);
-
-            JButton btnForgot = new JButton("Quên mật khẩu?");
-            btnForgot.setBorderPainted(false);
-            btnForgot.setFocusPainted(false);
-            btnForgot.setContentAreaFilled(false);
-            btnForgot.setForeground(new Color(255, 102, 0));
+            JButton btnRegister = new JButton("ĐĂNG KÝ TÀI KHOẢN");
+            btnRegister.setBackground(Color.WHITE);
+            btnRegister.setForeground(new Color(70, 130, 180));
+            btnRegister.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(70, 130, 180), 2),
+                BorderFactory.createEmptyBorder(10, 20, 10, 20)
+            ));
+            btnRegister.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            btnRegister.setPreferredSize(new Dimension(280, 45));
+            btnRegister.setFocusPainted(false);
+            btnRegister.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            btnRegister.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    btnRegister.setBackground(new Color(70, 130, 180));
+                    btnRegister.setForeground(Color.WHITE);
+                }
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    btnRegister.setBackground(Color.WHITE);
+                    btnRegister.setForeground(new Color(70, 130, 180));
+                }
+            });
 
             JLabel lblMsg = new JLabel("");
             lblMsg.setForeground(new Color(204, 0, 0));
 
-            // Hiện/ẩn mật khẩu
-            chkShowPass.addActionListener(e -> {
-                txtPass.setEchoChar(chkShowPass.isSelected() ? (char) 0 : '\u2022');
-            });
+            // Layout for form elements inside formPanel
+            GroupLayout formLayout = new GroupLayout(formPanel);
+            formPanel.setLayout(formLayout);
+            formLayout.setAutoCreateGaps(true);
+            formLayout.setAutoCreateContainerGaps(false);
 
-            // Layout cho các thành phần
+            formLayout.setHorizontalGroup(
+                formLayout.createParallelGroup(GroupLayout.Alignment.CENTER)
+                    .addComponent(lblRole, GroupLayout.Alignment.LEADING)
+                    .addComponent(cbRole, GroupLayout.PREFERRED_SIZE, 280, GroupLayout.PREFERRED_SIZE)
+                    .addComponent(lblUser, GroupLayout.Alignment.LEADING)
+                    .addComponent(txtUser, GroupLayout.PREFERRED_SIZE, 280, GroupLayout.PREFERRED_SIZE)
+                    .addComponent(lblPass, GroupLayout.Alignment.LEADING)
+                    .addComponent(passPanel, GroupLayout.PREFERRED_SIZE, 280, GroupLayout.PREFERRED_SIZE)
+                    .addGroup(formLayout.createSequentialGroup()
+                        .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(lblForgot))
+                    .addComponent(lblMsg)
+                    .addComponent(btnLogin, GroupLayout.PREFERRED_SIZE, 280, GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btnRegister, GroupLayout.PREFERRED_SIZE, 280, GroupLayout.PREFERRED_SIZE)
+            );
+            formLayout.setVerticalGroup(
+                formLayout.createSequentialGroup()
+                    .addComponent(lblRole)
+                    .addGap(5)
+                    .addComponent(cbRole, GroupLayout.PREFERRED_SIZE, 40, GroupLayout.PREFERRED_SIZE)
+                    .addGap(15)
+                    .addComponent(lblUser)
+                    .addGap(5)
+                    .addComponent(txtUser, GroupLayout.PREFERRED_SIZE, 40, GroupLayout.PREFERRED_SIZE)
+                    .addGap(15)
+                    .addComponent(lblPass)
+                    .addGap(5)
+                    .addComponent(passPanel, GroupLayout.PREFERRED_SIZE, 40, GroupLayout.PREFERRED_SIZE)
+                    .addGap(5)
+                    .addComponent(lblForgot)
+                    .addGap(15)
+                    .addComponent(lblMsg)
+                    .addGap(15)
+                    .addComponent(btnLogin, GroupLayout.PREFERRED_SIZE, 45, GroupLayout.PREFERRED_SIZE)
+                    .addGap(15)
+                    .addComponent(btnRegister, GroupLayout.PREFERRED_SIZE, 45, GroupLayout.PREFERRED_SIZE)
+                    .addGap(10)
+            );
+
+            // Main layout
             layout.setHorizontalGroup(
                 layout.createParallelGroup(GroupLayout.Alignment.CENTER)
-                    .addGroup(layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(GroupLayout.Alignment.TRAILING)
-                            .addComponent(lblUser)
-                            .addComponent(lblPass))
-                        .addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                            .addComponent(txtUser)
-                            .addComponent(txtPass)
-                            .addComponent(chkShowPass)))
-                    .addComponent(lblMsg)
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(btnLogin, GroupLayout.PREFERRED_SIZE, 120, GroupLayout.PREFERRED_SIZE)
-                        .addComponent(btnRegister, GroupLayout.PREFERRED_SIZE, 120, GroupLayout.PREFERRED_SIZE))
-                    .addComponent(btnForgot)
+                    .addComponent(headerPanel)
+                    .addComponent(formPanel, GroupLayout.PREFERRED_SIZE, 400, GroupLayout.PREFERRED_SIZE)
             );
             layout.setVerticalGroup(
                 layout.createSequentialGroup()
+                    .addGap(20)
+                    .addComponent(headerPanel)
+                    .addGap(20)
+                    .addComponent(formPanel)
                     .addGap(30)
-                    .addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                        .addComponent(lblUser)
-                        .addComponent(txtUser))
-                    .addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                        .addComponent(lblPass)
-                        .addComponent(txtPass))
-                    .addComponent(chkShowPass)
-                    .addGap(10)
-                    .addComponent(lblMsg)
-                    .addGap(10)
-                    .addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                        .addComponent(btnLogin)
-                        .addComponent(btnRegister))
-                    .addComponent(btnForgot)
             );
 
             btnLogin.addActionListener(e -> {
                 String username = txtUser.getText();
                 String password = new String(txtPass.getPassword());
+                String selectedRole = cbRole.getSelectedItem().toString();
                 lblMsg.setText("");
-                if (username.isEmpty() || password.isEmpty()) {
-                    lblMsg.setText("Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu.");
-                    return;
+
+                // Admin validation
+                if ("Quản trị viên".equals(selectedRole)) {
+                    if (!("admin".equals(username) && "admin".equals(password))) {
+                        lblMsg.setText("Sai tên đăng nhập hoặc mật khẩu quản trị!");
+                        return;
+                    }
                 }
+
                 try (Socket socket = new Socket("localhost", 12345);
                      BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                      PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
@@ -144,6 +328,17 @@ public class MainApp {
                         String[] p = resp.split("\\|");
                         int userId = Integer.parseInt(p[1]);
                         String role = p[2];
+
+                        // Check if role matches selected role
+                        if ("Quản trị viên".equals(selectedRole) && !"admin".equals(role)) {
+                            lblMsg.setText("Tài khoản này không có quyền quản trị!");
+                            return;
+                        }
+                        if ("Người dùng".equals(selectedRole) && "admin".equals(role)) {
+                            lblMsg.setText("Vui lòng chọn đúng vai trò quản trị viên!");
+                            return;
+                        }
+
                         frame.dispose();
                         if ("admin".equals(role)) {
                             SwingUtilities.invokeLater(() -> new AdminUI().setVisible(true));
@@ -169,69 +364,71 @@ public class MainApp {
                 }).setVisible(true));
             });
 
-            // Quên mật khẩu
-            btnForgot.addActionListener(e -> {
-                JDialog dialog = new JDialog(frame, "Khôi phục mật khẩu", true);
-                dialog.setSize(370, 200);
+            // Remove the previous mouse listener and add the click handler
+            lblForgot.addMouseListener(new MouseAdapter() {
+                public void mouseClicked(MouseEvent e) {
+                    JDialog dialog = new JDialog(frame, "Khôi phục mật khẩu", true);
+                    dialog.setSize(370, 200);
 
-                JPanel recoverPanel = new JPanel();
-                recoverPanel.setBackground(new Color(255, 245, 230)); // màu nền cam nhạt
-                dialog.setContentPane(recoverPanel);
-                GridBagLayout gbl = new GridBagLayout();
-                recoverPanel.setLayout(gbl);
+                    JPanel recoverPanel = new JPanel();
+                    recoverPanel.setBackground(new Color(255, 245, 230));
+                    dialog.setContentPane(recoverPanel);
+                    GridBagLayout gbl = new GridBagLayout();
+                    recoverPanel.setLayout(gbl);
 
-                JLabel l1 = new JLabel("Nhập email hoặc số điện thoại:");
-                l1.setForeground(new Color(255, 102, 0));
-                JTextField txtInfo = new JTextField(22);
-                txtInfo.setBackground(Color.WHITE);
-                txtInfo.setForeground(new Color(102, 51, 0));
-                JButton btnSend = new JButton("Gửi yêu cầu");
-                btnSend.setBackground(new Color(255, 153, 51));
-                btnSend.setForeground(Color.WHITE);
-                JLabel lblStatus = new JLabel("");
-                lblStatus.setForeground(new Color(204, 0, 0));
+                    JLabel l1 = new JLabel("Nhập email hoặc số điện thoại:");
+                    l1.setForeground(new Color(255, 102, 0));
+                    JTextField txtInfo = new JTextField(22);
+                    txtInfo.setBackground(Color.WHITE);
+                    txtInfo.setForeground(new Color(102, 51, 0));
+                    JButton btnSend = new JButton("Gửi yêu cầu");
+                    btnSend.setBackground(new Color(255, 153, 51));
+                    btnSend.setForeground(Color.WHITE);
+                    JLabel lblStatus = new JLabel("");
+                    lblStatus.setForeground(new Color(204, 0, 0));
 
-                GridBagConstraints gbc = new GridBagConstraints();
-                gbc.insets = new Insets(8, 8, 8, 8);
-                gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2; gbc.anchor = GridBagConstraints.WEST;
-                recoverPanel.add(l1, gbc);
-                gbc.gridy++;
-                recoverPanel.add(txtInfo, gbc);
-                gbc.gridy++;
-                gbc.gridwidth = 1;
-                recoverPanel.add(btnSend, gbc);
-                gbc.gridx = 1;
-                recoverPanel.add(lblStatus, gbc);
+                    GridBagConstraints gbc = new GridBagConstraints();
+                    gbc.insets = new Insets(8, 8, 8, 8);
+                    gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2; gbc.anchor = GridBagConstraints.WEST;
+                    recoverPanel.add(l1, gbc);
+                    gbc.gridy++;
+                    recoverPanel.add(txtInfo, gbc);
+                    gbc.gridy++;
+                    gbc.gridwidth = 1;
+                    recoverPanel.add(btnSend, gbc);
+                    gbc.gridx = 1;
+                    recoverPanel.add(lblStatus, gbc);
 
-                btnSend.addActionListener(ev -> {
-                    String info = txtInfo.getText().trim();
-                    if (info.isEmpty()) {
-                        lblStatus.setText("Vui lòng nhập email hoặc số điện thoại.");
-                        return;
-                    }
-                    try (Connection conn = java.sql.DriverManager.getConnection("jdbc:sqlite:C:/data/library.db")) {
-                        PreparedStatement ps = conn.prepareStatement(
-                            "SELECT username, password FROM users WHERE email=? OR phone=?");
-                        ps.setString(1, info);
-                        ps.setString(2, info);
-                        ResultSet rs = ps.executeQuery();
-                        if (rs.next()) {
-                            String user = rs.getString("username");
-                            String pass = rs.getString("password");
-                            lblStatus.setForeground(new Color(0,128,0));
-                            lblStatus.setText("Tài khoản: " + user + ", Mật khẩu: " + pass);
-                        } else {
-                            lblStatus.setForeground(Color.RED);
-                            lblStatus.setText("Không tìm thấy tài khoản phù hợp.");
+                    btnSend.addActionListener(ev -> {
+                        String info = txtInfo.getText().trim();
+                        if (info.isEmpty()) {
+                            lblStatus.setText("Vui lòng nhập email hoặc số điện thoại.");
+                            return;
                         }
-                    } catch (Exception ex) {
-                        lblStatus.setForeground(Color.RED);
-                        lblStatus.setText("Lỗi truy vấn: " + ex.getMessage());
-                    }
-                });
+                        try (Connection conn = java.sql.DriverManager.getConnection("jdbc:sqlite:C:/data/library.db")) {
+                            PreparedStatement ps = conn.prepareStatement(
+                                "SELECT username, password FROM users WHERE email=? OR phone=?");
+                            ps.setString(1, info);
+                            ps.setString(2, info);
+                            ResultSet rs = ps.executeQuery();
+                            if (rs.next()) {
+                                String user = rs.getString("username");
+                                String pass = rs.getString("password");
+                                lblStatus.setForeground(new Color(0,128,0));
+                                lblStatus.setText("Tài khoản: " + user + ", Mật khẩu: " + pass);
+                            } else {
+                                lblStatus.setForeground(Color.RED);
+                                lblStatus.setText("Không tìm thấy tài khoản phù hợp.");
+                            }
+                        } catch (Exception ex) {
+                            lblStatus.setForeground(Color.RED);
+                            lblStatus.setText("Lỗi truy vấn: " + ex.getMessage());
+                        }
+                    });
 
-                dialog.setLocationRelativeTo(frame);
-                dialog.setVisible(true);
+                    dialog.setLocationRelativeTo(frame);
+                    dialog.setVisible(true);
+                }
             });
 
             frame.setLocationRelativeTo(null);

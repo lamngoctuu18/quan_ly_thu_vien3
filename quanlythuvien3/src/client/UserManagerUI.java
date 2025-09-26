@@ -1,24 +1,25 @@
 package client;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.*;
 import java.sql.*;
 
 public class UserManagerUI extends JFrame {
-    private JTextField txtPhone;
-    private JLabel lblName, lblEmail, lblPhone, lblBorrowCount, lblReturnSoonCount;
-    private JButton btnSearch, btnBack, btnEdit, btnDelete;
-    private JButton btnBorrowDetail, btnReturnDetail;
+    private JTextField txtPhone, txtLimit;
+    private JButton btnSearch, btnBack;
+    private JTable userTable;
+    private DefaultTableModel userModel;
 
     public UserManagerUI() {
         setTitle("Quản lý người dùng");
-        setMinimumSize(new Dimension(700, 400));
-        setPreferredSize(new Dimension(900, 600));
+        setMinimumSize(new Dimension(900, 500));
+        setPreferredSize(new Dimension(1100, 600));
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
         JPanel mainPanel = new JPanel();
-        mainPanel.setBackground(new Color(245, 248, 255));
+        mainPanel.setBackground(new Color(240, 240, 240));
         setContentPane(mainPanel);
 
         GroupLayout layout = new GroupLayout(mainPanel);
@@ -26,282 +27,161 @@ public class UserManagerUI extends JFrame {
         layout.setAutoCreateGaps(true);
         layout.setAutoCreateContainerGaps(true);
 
-        // Top panel: nhập số điện thoại, tìm kiếm, quay lại
         JLabel lblTitle = new JLabel("Quản lý người dùng");
         lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 22));
         lblTitle.setForeground(new Color(0, 51, 102));
         lblTitle.setBorder(BorderFactory.createEmptyBorder(18, 18, 0, 0));
 
-        JLabel lblPhoneInput = new JLabel("Ô nhập số điện thoại:");
-        lblPhoneInput.setForeground(new Color(0, 51, 102));
+        JLabel lblPhoneInput = new JLabel("Số điện thoại:");
         txtPhone = new JTextField(15);
-        txtPhone.setBackground(Color.WHITE);
-        txtPhone.setForeground(new Color(0, 51, 102));
+        JLabel lblLimit = new JLabel("Hạn:");
+        txtLimit = new JTextField(8);
         btnSearch = new JButton("Tìm kiếm");
         btnSearch.setBackground(new Color(0, 102, 204));
         btnSearch.setForeground(Color.WHITE);
-        btnSearch.setFont(new Font("Segoe UI", Font.BOLD, 15));
         btnBack = new JButton("Quay lại");
         btnBack.setBackground(new Color(255, 153, 51));
         btnBack.setForeground(Color.WHITE);
-        btnBack.setFont(new Font("Segoe UI", Font.BOLD, 15));
 
-        JPanel topPanel = new JPanel();
-        topPanel.setBackground(new Color(245, 248, 255));
-        GroupLayout topLayout = new GroupLayout(topPanel);
-        topPanel.setLayout(topLayout);
-        topLayout.setAutoCreateGaps(true);
-        topLayout.setAutoCreateContainerGaps(true);
-        topLayout.setHorizontalGroup(
-            topLayout.createSequentialGroup()
-                .addComponent(lblPhoneInput)
-                .addComponent(txtPhone, GroupLayout.PREFERRED_SIZE, 180, GroupLayout.PREFERRED_SIZE)
-                .addComponent(btnSearch, GroupLayout.PREFERRED_SIZE, 120, GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 400, Short.MAX_VALUE)
-                .addComponent(btnBack, GroupLayout.PREFERRED_SIZE, 120, GroupLayout.PREFERRED_SIZE)
-        );
-        topLayout.setVerticalGroup(
-            topLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                .addComponent(lblPhoneInput)
-                .addComponent(txtPhone)
-                .addComponent(btnSearch)
-                .addComponent(btnBack)
-        );
+        // Table columns
+        String[] cols = {"Họ và tên", "Số điện thoại", "Email", "Số sách đang mượn", "Ngày tạo tài khoản", "Thao tác"};
+        userModel = new DefaultTableModel(cols, 0) {
+            public boolean isCellEditable(int row, int col) {
+                return col == 5; // Chỉ cột thao tác
+            }
+        };
+        userTable = new JTable(userModel);
+        userTable.setRowHeight(28);
+        userTable.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        userTable.getTableHeader().setBackground(new Color(0, 102, 204));
+        userTable.getTableHeader().setForeground(Color.WHITE);
 
-        // Center panel: thông tin người dùng
-        JPanel infoPanel = new JPanel();
-        infoPanel.setBackground(new Color(255, 245, 230));
-        GroupLayout infoLayout = new GroupLayout(infoPanel);
-        infoPanel.setLayout(infoLayout);
-        infoLayout.setAutoCreateGaps(true);
-        infoLayout.setAutoCreateContainerGaps(true);
+        // Renderer cho nút "Xem chi tiết"
+        userTable.getColumn("Thao tác").setCellRenderer(new javax.swing.table.TableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable tbl, Object value, boolean isSelected, boolean hasFocus, int row, int col) {
+                JButton btn = new JButton("Xem chi tiết");
+                btn.setBackground(new Color(0, 153, 76));
+                btn.setForeground(Color.WHITE);
+                return btn;
+            }
+        });
+        userTable.getColumn("Thao tác").setCellEditor(new DefaultCellEditor(new JCheckBox()) {
+            private JButton btn = new JButton("Xem chi tiết");
+            {
+                btn.setBackground(new Color(0, 153, 76));
+                btn.setForeground(Color.WHITE);
+                btn.addActionListener(e -> {
+                    int row = userTable.getEditingRow();
+                    String userPhone = userTable.getValueAt(row, 1).toString();
+                    fireEditingStopped();
+                    showUserDetail(userPhone);
+                });
+            }
+            @Override
+            public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+                return btn;
+            }
+        });
 
-        // Tạo các label tiêu đề để dùng cho cả horizontal/vertical group
-        JLabel lblNameTitle = new JLabel("Tên người dùng:");
-        JLabel lblEmailTitle = new JLabel("Email người dùng:");
-        JLabel lblPhoneTitle = new JLabel("Số điện thoại:");
-        JLabel lblBorrowTitle = new JLabel("Số lượng sách đang mượn:");
-        JLabel lblReturnTitle = new JLabel("Số lượng sách sắp đến hạn trả:");
+        JScrollPane scrollPane = new JScrollPane(userTable);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 18, 10, 18));
 
-        lblName = new JLabel();
-        lblEmail = new JLabel();
-        lblPhone = new JLabel();
-        lblBorrowCount = new JLabel();
-        lblReturnSoonCount = new JLabel();
-        btnBorrowDetail = new JButton("Xem chi tiết");
-        btnBorrowDetail.setBackground(new Color(0, 153, 76));
-        btnBorrowDetail.setForeground(Color.WHITE);
-        btnBorrowDetail.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        btnReturnDetail = new JButton("Xem chi tiết");
-        btnReturnDetail.setBackground(new Color(255, 102, 0));
-        btnReturnDetail.setForeground(Color.WHITE);
-        btnReturnDetail.setFont(new Font("Segoe UI", Font.BOLD, 15));
-
-        infoLayout.setHorizontalGroup(
-            infoLayout.createSequentialGroup()
-                .addGroup(infoLayout.createParallelGroup(GroupLayout.Alignment.TRAILING)
-                    .addComponent(lblNameTitle)
-                    .addComponent(lblEmailTitle)
-                    .addComponent(lblPhoneTitle)
-                    .addComponent(lblBorrowTitle)
-                    .addComponent(lblReturnTitle)
-                )
-                .addGroup(infoLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                    .addComponent(lblName)
-                    .addComponent(lblEmail)
-                    .addComponent(lblPhone)
-                    .addComponent(lblBorrowCount)
-                    .addComponent(lblReturnSoonCount)
-                )
-                .addGroup(infoLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                    .addGap(0)
-                    .addGap(0)
-                    .addGap(0)
-                    .addComponent(btnBorrowDetail, GroupLayout.PREFERRED_SIZE, 120, GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnReturnDetail, GroupLayout.PREFERRED_SIZE, 120, GroupLayout.PREFERRED_SIZE)
-                )
-        );
-        infoLayout.setVerticalGroup(
-            infoLayout.createSequentialGroup()
-                .addGap(18)
-                .addGroup(infoLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                    .addComponent(lblNameTitle)
-                    .addComponent(lblName)
-                    .addGap(0))
-                .addGroup(infoLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                    .addComponent(lblEmailTitle)
-                    .addComponent(lblEmail)
-                    .addGap(0))
-                .addGroup(infoLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                    .addComponent(lblPhoneTitle)
-                    .addComponent(lblPhone)
-                    .addGap(0))
-                .addGroup(infoLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                    .addComponent(lblBorrowTitle)
-                    .addComponent(lblBorrowCount)
-                    .addComponent(btnBorrowDetail))
-                .addGroup(infoLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                    .addComponent(lblReturnTitle)
-                    .addComponent(lblReturnSoonCount)
-                    .addComponent(btnReturnDetail))
-        );
-
-        // Bottom panel: nút sửa, xóa
-        JPanel bottomPanel = new JPanel();
-        bottomPanel.setBackground(new Color(245, 248, 255));
-        GroupLayout bottomLayout = new GroupLayout(bottomPanel);
-        bottomPanel.setLayout(bottomLayout);
-        bottomLayout.setAutoCreateGaps(true);
-        bottomLayout.setAutoCreateContainerGaps(true);
-
-        btnEdit = new JButton("Sửa thông tin người dùng");
-        btnEdit.setBackground(new Color(0, 102, 204));
-        btnEdit.setForeground(Color.WHITE);
-        btnEdit.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        btnDelete = new JButton("Xóa người dùng");
-        btnDelete.setBackground(new Color(204, 0, 0));
-        btnDelete.setForeground(Color.WHITE);
-        btnDelete.setFont(new Font("Segoe UI", Font.BOLD, 15));
-
-        bottomLayout.setHorizontalGroup(
-            bottomLayout.createSequentialGroup()
-                .addComponent(btnEdit, GroupLayout.PREFERRED_SIZE, 200, GroupLayout.PREFERRED_SIZE)
-                .addComponent(btnDelete, GroupLayout.PREFERRED_SIZE, 200, GroupLayout.PREFERRED_SIZE)
-        );
-        bottomLayout.setVerticalGroup(
-            bottomLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                .addComponent(btnEdit)
-                .addComponent(btnDelete)
-        );
-
+        // Layout
         layout.setHorizontalGroup(
             layout.createParallelGroup(GroupLayout.Alignment.CENTER)
                 .addComponent(lblTitle)
-                .addComponent(topPanel)
-                .addComponent(infoPanel)
-                .addComponent(bottomPanel)
+                .addGroup(layout.createSequentialGroup()
+                    .addComponent(lblPhoneInput)
+                    .addComponent(txtPhone, GroupLayout.PREFERRED_SIZE, 150, GroupLayout.PREFERRED_SIZE)
+                    .addComponent(lblLimit)
+                    .addComponent(txtLimit, GroupLayout.PREFERRED_SIZE, 80, GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btnSearch, GroupLayout.PREFERRED_SIZE, 120, GroupLayout.PREFERRED_SIZE)
+                )
+                .addComponent(scrollPane)
+                .addGroup(layout.createSequentialGroup()
+                    .addGap(0, 800, Short.MAX_VALUE)
+                    .addComponent(btnBack, GroupLayout.PREFERRED_SIZE, 120, GroupLayout.PREFERRED_SIZE)
+                )
         );
         layout.setVerticalGroup(
             layout.createSequentialGroup()
                 .addGap(18)
                 .addComponent(lblTitle)
-                .addComponent(topPanel, GroupLayout.PREFERRED_SIZE, 40, GroupLayout.PREFERRED_SIZE)
-                .addComponent(infoPanel, GroupLayout.PREFERRED_SIZE, 220, GroupLayout.PREFERRED_SIZE)
+                .addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                    .addComponent(lblPhoneInput)
+                    .addComponent(txtPhone)
+                    .addComponent(lblLimit)
+                    .addComponent(txtLimit)
+                    .addComponent(btnSearch))
+                .addComponent(scrollPane)
                 .addGap(10)
-                .addComponent(bottomPanel, GroupLayout.PREFERRED_SIZE, 50, GroupLayout.PREFERRED_SIZE)
+                .addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                    .addComponent(btnBack))
         );
 
-        // Sự kiện tìm kiếm
-        btnSearch.addActionListener(e -> searchUser());
+        btnSearch.addActionListener(e -> loadUsers());
         btnBack.addActionListener(e -> dispose());
 
-        // Sửa thông tin người dùng
-        btnEdit.addActionListener(e -> editUser());
-
-        // Xóa người dùng
-        btnDelete.addActionListener(e -> deleteUser());
-
-        btnBorrowDetail.addActionListener(e -> JOptionPane.showMessageDialog(this, "Chi tiết sách đang mượn"));
-        btnReturnDetail.addActionListener(e -> JOptionPane.showMessageDialog(this, "Chi tiết sách sắp đến hạn trả"));
-
+        loadUsers();
         pack();
         setLocationRelativeTo(null);
     }
 
-    private Connection getConn() throws Exception {
-        return DriverManager.getConnection("jdbc:sqlite:C:/data/library.db");
-    }
-
-    private void searchUser() {
+    private void loadUsers() {
+        userModel.setRowCount(0);
         String phone = txtPhone.getText().trim();
-        if (phone.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Vui lòng nhập số điện thoại!");
-            return;
-        }
-        try (Connection conn = getConn()) {
-            PreparedStatement ps = conn.prepareStatement("SELECT username, email, phone FROM users WHERE phone=?");
-            ps.setString(1, phone);
+        String limit = txtLimit.getText().trim();
+        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:C:/data/library.db")) {
+            String sql = "SELECT id, username, phone, email, created_at FROM users WHERE role != 'admin'";
+            if (!phone.isEmpty()) sql += " AND phone LIKE ?";
+            if (!limit.isEmpty()) sql += " AND id <= ?";
+            PreparedStatement ps = conn.prepareStatement(sql);
+            int idx = 1;
+            if (!phone.isEmpty()) ps.setString(idx++, "%" + phone + "%");
+            if (!limit.isEmpty()) ps.setString(idx++, limit);
             ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                lblName.setText(rs.getString("username"));
-                lblEmail.setText(rs.getString("email"));
-                lblPhone.setText(rs.getString("phone"));
+            while (rs.next()) {
+                int userId = rs.getInt("id");
+                String username = rs.getString("username");
+                String userPhone = rs.getString("phone");
+                String email = rs.getString("email");
+                String createdAt = rs.getString("created_at");
 
                 // Đếm số sách đang mượn
                 PreparedStatement psBorrow = conn.prepareStatement(
-                    "SELECT COUNT(*) FROM borrows WHERE user_id=(SELECT id FROM users WHERE phone=?) AND return_date IS NULL");
-                psBorrow.setString(1, phone);
+                    "SELECT COUNT(*) FROM borrows WHERE user_id=? AND return_date IS NULL");
+                psBorrow.setInt(1, userId);
                 ResultSet rsBorrow = psBorrow.executeQuery();
-                lblBorrowCount.setText(rsBorrow.next() ? rsBorrow.getString(1) : "0");
+                String borrowCount = rsBorrow.next() ? rsBorrow.getString(1) : "0";
 
-                // Đếm số sách sắp đến hạn trả (ví dụ: hạn trả trong 3 ngày tới)
-                PreparedStatement psReturn = conn.prepareStatement(
-                    "SELECT COUNT(*) FROM borrows WHERE user_id=(SELECT id FROM users WHERE phone=?) AND return_date IS NULL AND julianday('now') - julianday(borrow_date) >= 27");
-                psReturn.setString(1, phone);
-                ResultSet rsReturn = psReturn.executeQuery();
-                lblReturnSoonCount.setText(rsReturn.next() ? rsReturn.getString(1) : "0");
+                userModel.addRow(new Object[]{
+                    username, userPhone, email, borrowCount, createdAt, "Xem chi tiết"
+                });
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Lỗi tải dữ liệu: " + ex.getMessage());
+        }
+    }
+
+    private void showUserDetail(String phone) {
+        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:C:/data/library.db")) {
+            PreparedStatement ps = conn.prepareStatement("SELECT id FROM users WHERE phone=?");
+            ps.setString(1, phone);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                String userId = rs.getString("id");
+                UserDetailUI detailUI = new UserDetailUI(userId);
+                detailUI.setVisible(true);
             } else {
-                JOptionPane.showMessageDialog(this, "Không tìm thấy người dùng với số điện thoại này!");
-                lblName.setText(""); lblEmail.setText(""); lblPhone.setText("");
-                lblBorrowCount.setText(""); lblReturnSoonCount.setText("");
+                JOptionPane.showMessageDialog(this, "Không tìm thấy người dùng!");
             }
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Lỗi truy vấn: " + ex.getMessage());
         }
     }
 
-    private void editUser() {
-        String phone = txtPhone.getText().trim();
-        if (phone.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Vui lòng nhập số điện thoại để sửa!");
-            return;
-        }
-        String newName = JOptionPane.showInputDialog(this, "Nhập tên mới:", lblName.getText());
-        if (newName == null || newName.trim().isEmpty()) return;
-        String newEmail = JOptionPane.showInputDialog(this, "Nhập email mới:", lblEmail.getText());
-        if (newEmail == null || newEmail.trim().isEmpty()) return;
-        try (Connection conn = getConn()) {
-            PreparedStatement ps = conn.prepareStatement("UPDATE users SET username=?, email=? WHERE phone=?");
-            ps.setString(1, newName.trim());
-            ps.setString(2, newEmail.trim());
-            ps.setString(3, phone);
-            int rows = ps.executeUpdate();
-            if (rows > 0) {
-                JOptionPane.showMessageDialog(this, "Sửa thông tin thành công!");
-                searchUser();
-            } else {
-                JOptionPane.showMessageDialog(this, "Không tìm thấy người dùng với số điện thoại này!");
-            }
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Lỗi sửa thông tin: " + ex.getMessage());
-        }
-    }
-
-    private void deleteUser() {
-        String phone = txtPhone.getText().trim();
-        if (phone.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Vui lòng nhập số điện thoại để xóa!");
-            return;
-        }
-        int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc chắn muốn xóa người dùng này?", "Xác nhận xóa", JOptionPane.YES_NO_OPTION);
-        if (confirm != JOptionPane.YES_OPTION) return;
-        try (Connection conn = getConn()) {
-            PreparedStatement ps = conn.prepareStatement("DELETE FROM users WHERE phone=?");
-            ps.setString(1, phone);
-            int rows = ps.executeUpdate();
-            if (rows > 0) {
-                JOptionPane.showMessageDialog(this, "Xóa người dùng thành công!");
-                lblName.setText(""); lblEmail.setText(""); lblPhone.setText("");
-                lblBorrowCount.setText(""); lblReturnSoonCount.setText("");
-            } else {
-                JOptionPane.showMessageDialog(this, "Không tìm thấy người dùng với số điện thoại này!");
-            }
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Lỗi xóa người dùng: " + ex.getMessage());
-        }
-    }
-
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new UserManagerUI().setVisible(true));
     }
-}
+    }
