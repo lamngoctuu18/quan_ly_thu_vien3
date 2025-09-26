@@ -1,7 +1,9 @@
 package client;
 
 import javax.swing.*;
+import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.event.*;
 import java.sql.*;
@@ -14,35 +16,125 @@ public class UserManagerUI extends JFrame {
 
     public UserManagerUI() {
         setTitle("Quản lý người dùng");
-        setMinimumSize(new Dimension(900, 500));
-        setPreferredSize(new Dimension(1100, 600));
+        setMinimumSize(new Dimension(1000, 650));
+        setPreferredSize(new Dimension(1200, 750));
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
-        JPanel mainPanel = new JPanel();
-        mainPanel.setBackground(new Color(240, 240, 240));
+        // Main panel with modern gradient background
+        JPanel mainPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                int w = getWidth(), h = getHeight();
+                GradientPaint gp = new GradientPaint(0, 0, new Color(248, 250, 252), 0, h, new Color(238, 242, 247));
+                g2d.setPaint(gp);
+                g2d.fillRect(0, 0, w, h);
+            }
+        };
         setContentPane(mainPanel);
 
-        GroupLayout layout = new GroupLayout(mainPanel);
-        mainPanel.setLayout(layout);
-        layout.setAutoCreateGaps(true);
-        layout.setAutoCreateContainerGaps(true);
+        mainPanel.setLayout(new BorderLayout(0, 20));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(25, 25, 25, 25));
 
-        JLabel lblTitle = new JLabel("Quản lý người dùng");
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 22));
-        lblTitle.setForeground(new Color(0, 51, 102));
-        lblTitle.setBorder(BorderFactory.createEmptyBorder(18, 18, 0, 0));
+        // Create and add components
+        mainPanel.add(createHeaderPanel(), BorderLayout.NORTH);
+        mainPanel.add(createSearchPanel(), BorderLayout.CENTER);
+        mainPanel.add(createButtonPanel(), BorderLayout.SOUTH);
 
-        JLabel lblPhoneInput = new JLabel("Số điện thoại:");
+        // Load initial data
+        loadUsers();
+        
+        pack();
+        setLocationRelativeTo(null);
+    }
+    
+    private JPanel createHeaderPanel() {
+        JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 10));
+        headerPanel.setOpaque(false);
+        
+        JLabel titleLabel = new JLabel("Quản lý người dùng");
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        titleLabel.setForeground(new Color(31, 81, 135));
+        
+        headerPanel.add(titleLabel);
+        return headerPanel;
+    }
+    
+    private JPanel createSearchPanel() {
+        JPanel searchPanel = new JPanel(new BorderLayout(0, 20));
+        searchPanel.setOpaque(false);
+        
+        // Search controls panel
+        JPanel controlsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
+        controlsPanel.setOpaque(false);
+        controlsPanel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(new Color(31, 81, 135), 1, true),
+            "Tìm kiếm người dùng",
+            TitledBorder.LEFT,
+            TitledBorder.TOP,
+            new Font("Segoe UI", Font.PLAIN, 14),
+            new Color(31, 81, 135)
+        ));
+        
+        JLabel lblPhone = new JLabel("Số điện thoại:");
+        lblPhone.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        lblPhone.setForeground(new Color(52, 58, 64));
+        
         txtPhone = new JTextField(15);
+        txtPhone.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        txtPhone.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(206, 212, 218)),
+            BorderFactory.createEmptyBorder(8, 12, 8, 12)
+        ));
+        
         JLabel lblLimit = new JLabel("Hạn:");
+        lblLimit.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        lblLimit.setForeground(new Color(52, 58, 64));
+        
         txtLimit = new JTextField(8);
+        txtLimit.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        txtLimit.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(206, 212, 218)),
+            BorderFactory.createEmptyBorder(8, 12, 8, 12)
+        ));
+        
         btnSearch = new JButton("Tìm kiếm");
-        btnSearch.setBackground(new Color(0, 102, 204));
+        btnSearch.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnSearch.setBackground(new Color(31, 81, 135));
         btnSearch.setForeground(Color.WHITE);
-        btnBack = new JButton("Quay lại");
-        btnBack.setBackground(new Color(255, 153, 51));
-        btnBack.setForeground(Color.WHITE);
-
+        btnSearch.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        btnSearch.setFocusPainted(false);
+        btnSearch.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        
+        controlsPanel.add(lblPhone);
+        controlsPanel.add(txtPhone);
+        controlsPanel.add(lblLimit);
+        controlsPanel.add(txtLimit);
+        controlsPanel.add(btnSearch);
+        
+        // Table panel
+        JPanel tablePanel = createTablePanel();
+        
+        searchPanel.add(controlsPanel, BorderLayout.NORTH);
+        searchPanel.add(tablePanel, BorderLayout.CENTER);
+        
+        return searchPanel;
+    }
+    
+    private JPanel createTablePanel() {
+        JPanel tablePanel = new JPanel(new BorderLayout());
+        tablePanel.setOpaque(false);
+        tablePanel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(new Color(31, 81, 135), 1, true),
+            "Danh sách người dùng",
+            TitledBorder.LEFT,
+            TitledBorder.TOP,
+            new Font("Segoe UI", Font.PLAIN, 14),
+            new Color(31, 81, 135)
+        ));
+        
         // Table columns
         String[] cols = {"Họ và tên", "Số điện thoại", "Email", "Số sách đang mượn", "Ngày tạo tài khoản", "Thao tác"};
         userModel = new DefaultTableModel(cols, 0) {
@@ -50,27 +142,43 @@ public class UserManagerUI extends JFrame {
                 return col == 5; // Chỉ cột thao tác
             }
         };
+        
         userTable = new JTable(userModel);
-        userTable.setRowHeight(28);
-        userTable.setFont(new Font("Segoe UI", Font.PLAIN, 15));
-        userTable.getTableHeader().setBackground(new Color(0, 102, 204));
-        userTable.getTableHeader().setForeground(Color.WHITE);
-
-        // Renderer cho nút "Xem chi tiết"
+        userTable.setRowHeight(35);
+        userTable.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        userTable.setGridColor(new Color(233, 236, 239));
+        userTable.setSelectionBackground(new Color(240, 248, 255));
+        userTable.setSelectionForeground(new Color(31, 81, 135));
+        
+        // Header styling
+        JTableHeader header = userTable.getTableHeader();
+        header.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        header.setBackground(new Color(31, 81, 135));
+        header.setForeground(Color.WHITE);
+        header.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        
+        // Action column renderer and editor
         userTable.getColumn("Thao tác").setCellRenderer(new javax.swing.table.TableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable tbl, Object value, boolean isSelected, boolean hasFocus, int row, int col) {
                 JButton btn = new JButton("Xem chi tiết");
-                btn.setBackground(new Color(0, 153, 76));
+                btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
+                btn.setBackground(new Color(40, 167, 69));
                 btn.setForeground(Color.WHITE);
+                btn.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+                btn.setFocusPainted(false);
                 return btn;
             }
         });
+        
         userTable.getColumn("Thao tác").setCellEditor(new DefaultCellEditor(new JCheckBox()) {
             private JButton btn = new JButton("Xem chi tiết");
             {
-                btn.setBackground(new Color(0, 153, 76));
+                btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
+                btn.setBackground(new Color(40, 167, 69));
                 btn.setForeground(Color.WHITE);
+                btn.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+                btn.setFocusPainted(false);
                 btn.addActionListener(e -> {
                     int row = userTable.getEditingRow();
                     String userPhone = userTable.getValueAt(row, 1).toString();
@@ -83,49 +191,34 @@ public class UserManagerUI extends JFrame {
                 return btn;
             }
         });
-
+        
         JScrollPane scrollPane = new JScrollPane(userTable);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 18, 10, 18));
-
-        // Layout
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(GroupLayout.Alignment.CENTER)
-                .addComponent(lblTitle)
-                .addGroup(layout.createSequentialGroup()
-                    .addComponent(lblPhoneInput)
-                    .addComponent(txtPhone, GroupLayout.PREFERRED_SIZE, 150, GroupLayout.PREFERRED_SIZE)
-                    .addComponent(lblLimit)
-                    .addComponent(txtLimit, GroupLayout.PREFERRED_SIZE, 80, GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnSearch, GroupLayout.PREFERRED_SIZE, 120, GroupLayout.PREFERRED_SIZE)
-                )
-                .addComponent(scrollPane)
-                .addGroup(layout.createSequentialGroup()
-                    .addGap(0, 800, Short.MAX_VALUE)
-                    .addComponent(btnBack, GroupLayout.PREFERRED_SIZE, 120, GroupLayout.PREFERRED_SIZE)
-                )
-        );
-        layout.setVerticalGroup(
-            layout.createSequentialGroup()
-                .addGap(18)
-                .addComponent(lblTitle)
-                .addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                    .addComponent(lblPhoneInput)
-                    .addComponent(txtPhone)
-                    .addComponent(lblLimit)
-                    .addComponent(txtLimit)
-                    .addComponent(btnSearch))
-                .addComponent(scrollPane)
-                .addGap(10)
-                .addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                    .addComponent(btnBack))
-        );
-
+        scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
+        scrollPane.getViewport().setBackground(Color.WHITE);
+        
+        tablePanel.add(scrollPane, BorderLayout.CENTER);
+        return tablePanel;
+    }
+    
+    private JPanel createButtonPanel() {
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 15));
+        buttonPanel.setOpaque(false);
+        
+        btnBack = new JButton("Làm mới");
+        btnBack.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnBack.setBackground(new Color(23, 162, 184));
+        btnBack.setForeground(Color.WHITE);
+        btnBack.setBorder(BorderFactory.createEmptyBorder(12, 24, 12, 24));
+        btnBack.setFocusPainted(false);
+        btnBack.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        
+        buttonPanel.add(btnBack);
+        
+        // Add event listeners
         btnSearch.addActionListener(e -> loadUsers());
-        btnBack.addActionListener(e -> dispose());
-
-        loadUsers();
-        pack();
-        setLocationRelativeTo(null);
+        btnBack.addActionListener(e -> refreshData());
+        
+        return buttonPanel;
     }
 
     private void loadUsers() {
@@ -179,6 +272,21 @@ public class UserManagerUI extends JFrame {
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Lỗi truy vấn: " + ex.getMessage());
         }
+    }
+    
+    private void refreshData() {
+        // Clear search fields
+        txtPhone.setText("");
+        txtLimit.setText("");
+        
+        // Reload all users
+        loadUsers();
+        
+        // Show confirmation message
+        JOptionPane.showMessageDialog(this, 
+            "Dữ liệu đã được làm mới thành công!", 
+            "Làm mới dữ liệu", 
+            JOptionPane.INFORMATION_MESSAGE);
     }
 
     public static void main(String[] args) {

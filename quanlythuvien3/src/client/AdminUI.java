@@ -41,9 +41,8 @@ public class AdminUI extends JFrame {
         UserManagerUI userManagerUI = new UserManagerUI();
         userManagerPanel.add(userManagerUI.getContentPane(), BorderLayout.CENTER);
 
-        JPanel borrowClientPanel = new JPanel(new BorderLayout());
-        BorrowClientUI borrowClientUI = new BorrowClientUI();
-        borrowClientPanel.add(borrowClientUI.getContentPane(), BorderLayout.CENTER);
+        // Create BorrowManagementUI as embedded panel instead of separate window
+        JPanel borrowClientPanel = createBorrowManagementPanel();
 
         JPanel borrowRequestPanel = new JPanel(new BorderLayout());
         BorrowRequestManagerUI borrowRequestUI = new BorrowRequestManagerUI();
@@ -164,5 +163,28 @@ public class AdminUI extends JFrame {
         btn.setFont(new Font("Segoe UI", Font.BOLD, 14));
         btn.setFocusPainted(false);
         btn.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
+    }
+    
+    private JPanel createBorrowManagementPanel() {
+        // Create a wrapper panel for the borrow management UI
+        JPanel wrapperPanel = new JPanel(new BorderLayout());
+        wrapperPanel.setBackground(Color.WHITE);
+        
+        try {
+            // Create BorrowManagementUI but extract its content instead of opening as window
+            BorrowManagementUI borrowUI = new BorrowManagementUI();
+            borrowUI.setVisible(false); // Don't show as separate window
+            
+            // Get the content pane and add to wrapper
+            wrapperPanel.add(borrowUI.getContentPane(), BorderLayout.CENTER);
+            
+        } catch (Exception e) {
+            // Fallback: create a simple message panel
+            JLabel errorLabel = new JLabel("Không thể tải giao diện quản lý mượn/trả: " + e.getMessage());
+            errorLabel.setHorizontalAlignment(JLabel.CENTER);
+            wrapperPanel.add(errorLabel, BorderLayout.CENTER);
+        }
+        
+        return wrapperPanel;
     }
 }

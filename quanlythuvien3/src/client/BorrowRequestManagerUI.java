@@ -21,7 +21,7 @@ public class BorrowRequestManagerUI extends JPanel {
     private PrintWriter out;
     private BufferedReader in;
     
-    private static final String[] STATUS_OPTIONS = {"Tất cả", "PENDING", "APPROVED", "REJECTED"};
+
     
     public BorrowRequestManagerUI() {
         setLayout(new BorderLayout(10, 10));
@@ -53,9 +53,56 @@ public class BorrowRequestManagerUI extends JPanel {
         JPanel tablePanel = createTablePanel();
         add(tablePanel, BorderLayout.CENTER);
         
+        // Bottom panel with statistics and buttons
+        JPanel bottomPanel = createBottomPanel();
+        add(bottomPanel, BorderLayout.SOUTH);
+    }
+    
+    private JPanel createBottomPanel() {
+        JPanel bottomPanel = new JPanel(new BorderLayout(10, 10));
+        bottomPanel.setOpaque(false);
+        
+        // Statistics panel
+        JPanel statsPanel = createStatsPanel();
+        
         // Button panel
         JPanel buttonPanel = createButtonPanel();
-        add(buttonPanel, BorderLayout.SOUTH);
+        
+        bottomPanel.add(statsPanel, BorderLayout.CENTER);
+        bottomPanel.add(buttonPanel, BorderLayout.EAST);
+        
+        return bottomPanel;
+    }
+    
+    private JPanel createStatsPanel() {
+        JPanel statsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 5));
+        statsPanel.setOpaque(false);
+        
+        JLabel totalLabel = new JLabel("Tổng: 0");
+        totalLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        totalLabel.setForeground(new Color(0, 123, 255));
+        
+        JLabel pendingLabel = new JLabel("Chờ duyệt: 0");
+        pendingLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        pendingLabel.setForeground(new Color(255, 193, 7));
+        
+        JLabel approvedLabel = new JLabel("Đã duyệt: 0");
+        approvedLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        approvedLabel.setForeground(new Color(40, 167, 69));
+        
+        JLabel rejectedLabel = new JLabel("Đã từ chối: 0");
+        rejectedLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        rejectedLabel.setForeground(new Color(220, 53, 69));
+        
+        statsPanel.add(totalLabel);
+        statsPanel.add(new JLabel("|"));
+        statsPanel.add(pendingLabel);
+        statsPanel.add(new JLabel("|"));
+        statsPanel.add(approvedLabel);
+        statsPanel.add(new JLabel("|"));
+        statsPanel.add(rejectedLabel);
+        
+        return statsPanel;
     }
     
     private JPanel createHeaderPanel() {
@@ -63,7 +110,7 @@ public class BorrowRequestManagerUI extends JPanel {
         headerPanel.setOpaque(false);
         
         // Title
-        JLabel titleLabel = new JLabel("📋 Quản lý đăng ký mượn sách");
+        JLabel titleLabel = new JLabel("Quản lý đăng ký mượn sách");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         titleLabel.setForeground(new Color(0, 123, 255));
         
@@ -72,7 +119,7 @@ public class BorrowRequestManagerUI extends JPanel {
         searchPanel.setOpaque(false);
         
         // Search field
-        JLabel searchLabel = new JLabel("🔍 Tìm kiếm:");
+        JLabel searchLabel = new JLabel("Tìm kiếm:");
         searchLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
         
         txtSearch = new JTextField(20);
@@ -83,14 +130,28 @@ public class BorrowRequestManagerUI extends JPanel {
             BorderFactory.createEmptyBorder(8, 12, 8, 12)
         ));
         
-        // Status filter
-        JLabel statusLabel = new JLabel("📊 Trạng thái:");
+        // Add realtime search
+        txtSearch.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
+            public void keyReleased(java.awt.event.KeyEvent e) {
+                loadBorrowRequests();
+            }
+        });
+        
+        // Status filter with better options display
+        JLabel statusLabel = new JLabel("Trạng thái:");
         statusLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
         
-        cbStatus = new JComboBox<>(STATUS_OPTIONS);
-        cbStatus.setPreferredSize(new Dimension(120, 35));
+        // Create custom renderer for status options
+        String[] statusDisplayOptions = {"Tất cả", "Chờ duyệt", "Đã duyệt", "Đã từ chối"};
+        cbStatus = new JComboBox<>(statusDisplayOptions);
+        cbStatus.setSelectedItem("Tất cả"); // Mặc định hiển thị tất cả đăng ký
+        cbStatus.setPreferredSize(new Dimension(140, 35));
         cbStatus.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         cbStatus.setBackground(Color.WHITE);
+        
+        // Add event listener for status filter
+        cbStatus.addActionListener(e -> loadBorrowRequests());
         
         // Search button
         JButton btnSearch = new JButton("Tìm kiếm");
@@ -102,13 +163,18 @@ public class BorrowRequestManagerUI extends JPanel {
         btnSearch.addActionListener(e -> loadBorrowRequests());
         
         // Refresh button
-        JButton btnRefresh = new JButton("🔄 Làm mới");
+        JButton btnRefresh = new JButton("Làm mới");
         btnRefresh.setPreferredSize(new Dimension(120, 35));
         btnRefresh.setBackground(new Color(40, 167, 69));
         btnRefresh.setForeground(Color.WHITE);
         btnRefresh.setFont(new Font("Segoe UI", Font.BOLD, 14));
         btnRefresh.setFocusPainted(false);
-        btnRefresh.addActionListener(e -> loadBorrowRequests());
+        btnRefresh.addActionListener(e -> {
+            // Reset search and filter
+            txtSearch.setText("");
+            cbStatus.setSelectedItem("Tất cả");
+            loadBorrowRequests();
+        });
         
         searchPanel.add(searchLabel);
         searchPanel.add(txtSearch);
@@ -129,8 +195,8 @@ public class BorrowRequestManagerUI extends JPanel {
         
         // Create table model
         String[] columnNames = {
-            "ID", "👤 Người dùng", "📖 Tên sách", "✍️ Tác giả", 
-            "📅 Ngày đăng ký", "📊 Trạng thái", "📝 Ghi chú"
+            "ID", "Người dùng", "Tên sách", "Tác giả", 
+            "Ngày đăng ký", "Trạng thái", "Ghi chú"
         };
         
         tableModel = new DefaultTableModel(columnNames, 0) {
@@ -179,7 +245,7 @@ public class BorrowRequestManagerUI extends JPanel {
         buttonPanel.setOpaque(false);
         
         // Approve button
-        JButton btnApprove = new JButton("✅ Duyệt đăng ký");
+        JButton btnApprove = new JButton("Duyệt đăng ký");
         btnApprove.setPreferredSize(new Dimension(150, 40));
         btnApprove.setBackground(new Color(40, 167, 69));
         btnApprove.setForeground(Color.WHITE);
@@ -188,7 +254,7 @@ public class BorrowRequestManagerUI extends JPanel {
         btnApprove.addActionListener(e -> approveRequest());
         
         // Reject button
-        JButton btnReject = new JButton("❌ Từ chối");
+        JButton btnReject = new JButton("Từ chối");
         btnReject.setPreferredSize(new Dimension(120, 40));
         btnReject.setBackground(new Color(220, 53, 69));
         btnReject.setForeground(Color.WHITE);
@@ -197,7 +263,7 @@ public class BorrowRequestManagerUI extends JPanel {
         btnReject.addActionListener(e -> rejectRequest());
         
         // View details button
-        JButton btnDetails = new JButton("📄 Chi tiết");
+        JButton btnDetails = new JButton("Chi tiết");
         btnDetails.setPreferredSize(new Dimension(120, 40));
         btnDetails.setBackground(new Color(255, 193, 7));
         btnDetails.setForeground(Color.WHITE);
@@ -230,7 +296,26 @@ public class BorrowRequestManagerUI extends JPanel {
             
             // Add status filter
             String statusFilter = cbStatus.getSelectedItem().toString();
-            if (!"Tất cả".equals(statusFilter)) {
+            String actualStatus = null;
+            
+            // Map display status to actual database status
+            switch (statusFilter) {
+                case "Chờ duyệt":
+                    actualStatus = "PENDING";
+                    break;
+                case "Đã duyệt":
+                    actualStatus = "APPROVED";
+                    break;
+                case "Đã từ chối":
+                    actualStatus = "REJECTED";
+                    break;
+                case "Tất cả":
+                default:
+                    actualStatus = null; // Show all
+                    break;
+            }
+            
+            if (actualStatus != null) {
                 query.append(" AND br.status = ?");
             }
             
@@ -246,8 +331,8 @@ public class BorrowRequestManagerUI extends JPanel {
                 ps.setString(paramIndex++, searchPattern);
             }
             
-            if (!"Tất cả".equals(statusFilter)) {
-                ps.setString(paramIndex++, statusFilter);
+            if (actualStatus != null) {
+                ps.setString(paramIndex++, actualStatus);
             }
             
             ResultSet rs = ps.executeQuery();
@@ -255,23 +340,33 @@ public class BorrowRequestManagerUI extends JPanel {
             // Clear existing data
             tableModel.setRowCount(0);
             
+            int totalCount = 0;
+            int pendingCount = 0;
+            int approvedCount = 0;
+            int rejectedCount = 0;
+            
             while (rs.next()) {
                 String status = rs.getString("status");
                 String statusDisplay;
                 switch (status) {
                     case "PENDING":
-                        statusDisplay = "🟡 Chờ duyệt";
+                        statusDisplay = "Chờ duyệt";
+                        pendingCount++;
                         break;
                     case "APPROVED":
-                        statusDisplay = "✅ Đã duyệt";
+                        statusDisplay = "Đã duyệt";
+                        approvedCount++;
                         break;
                     case "REJECTED":
-                        statusDisplay = "❌ Đã từ chối";
+                        statusDisplay = "Đã từ chối";
+                        rejectedCount++;
                         break;
                     default:
                         statusDisplay = status;
                         break;
                 }
+                
+                totalCount++;
                 
                 Object[] row = {
                     rs.getInt("id"),
@@ -285,8 +380,36 @@ public class BorrowRequestManagerUI extends JPanel {
                 tableModel.addRow(row);
             }
             
+            // Update statistics
+            updateStatistics(totalCount, pendingCount, approvedCount, rejectedCount);
+            
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Lỗi tải dữ liệu: " + e.getMessage());
+        }
+    }
+    
+    private void updateStatistics(int total, int pending, int approved, int rejected) {
+        // Find statistics labels and update them
+        updateStatisticsInPanel(this, total, pending, approved, rejected);
+    }
+    
+    private void updateStatisticsInPanel(java.awt.Container container, int total, int pending, int approved, int rejected) {
+        for (java.awt.Component comp : container.getComponents()) {
+            if (comp instanceof JLabel) {
+                JLabel label = (JLabel) comp;
+                String text = label.getText();
+                if (text.startsWith("Tổng:")) {
+                    label.setText("Tổng: " + total);
+                } else if (text.startsWith("Chờ duyệt:")) {
+                    label.setText("Chờ duyệt: " + pending);
+                } else if (text.startsWith("Đã duyệt:")) {
+                    label.setText("Đã duyệt: " + approved);
+                } else if (text.startsWith("Đã từ chối:")) {
+                    label.setText("Đã từ chối: " + rejected);
+                }
+            } else if (comp instanceof java.awt.Container) {
+                updateStatisticsInPanel((java.awt.Container) comp, total, pending, approved, rejected);
+            }
         }
     }
     
@@ -441,7 +564,7 @@ public class BorrowRequestManagerUI extends JPanel {
                 mainPanel.setBackground(new Color(248, 249, 250));
                 
                 // Header
-                JLabel headerLabel = new JLabel("📋 Chi tiết đăng ký mượn sách", SwingConstants.CENTER);
+                JLabel headerLabel = new JLabel("Chi tiết đăng ký mượn sách", SwingConstants.CENTER);
                 headerLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
                 headerLabel.setForeground(new Color(0, 123, 255));
                 

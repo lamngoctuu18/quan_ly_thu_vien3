@@ -178,7 +178,7 @@ public class RegisterUI extends JFrame {
             }
         });
 
-        JButton btnPreview = new JButton("👁");
+        JButton btnPreview = new JButton("Xem");
         btnPreview.setBackground(new Color(70, 130, 180));
         btnPreview.setForeground(Color.WHITE);
         btnPreview.setFont(new Font("Segoe UI", Font.PLAIN, 14));

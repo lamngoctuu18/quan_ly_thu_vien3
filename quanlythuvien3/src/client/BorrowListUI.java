@@ -2,183 +2,242 @@ package client;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
 import java.awt.*;
-import java.sql.*;
-import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.*;
+import java.net.Socket;
 
 public class BorrowListUI extends JFrame {
-    private DefaultTableModel tableModel;
-    private JTable table;
-    private JButton btnBack, btnRefresh;
     private int userId;
+    private Socket socket;
+    private PrintWriter out;
+    private BufferedReader in;
 
     public BorrowListUI(int userId) {
         this.userId = userId;
-        setTitle("Danh sách sách đã mượn");
-        setMinimumSize(new Dimension(700, 400));
-        setPreferredSize(new Dimension(900, 600));
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-
-        JPanel mainPanel = new JPanel();
-        mainPanel.setBackground(new Color(232, 242, 255));
-        setContentPane(mainPanel);
-
-        GroupLayout layout = new GroupLayout(mainPanel);
-        mainPanel.setLayout(layout);
-        layout.setAutoCreateGaps(true);
-        layout.setAutoCreateContainerGaps(true);
-
-        JLabel lblTitle = new JLabel("Danh sách sách đã mượn");
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 22));
-        lblTitle.setForeground(new Color(0, 51, 102));
-        lblTitle.setBorder(BorderFactory.createEmptyBorder(18, 18, 0, 0));
-
-        String[] cols = {"ID sách", "Tên sách", "Tác giả", "Ngày mượn", "Ngày trả", "Hạn trả"};
-        tableModel = new DefaultTableModel(cols, 0);
-        table = new JTable(tableModel);
-        table.setRowHeight(28);
-        table.setFont(new Font("Segoe UI", Font.PLAIN, 15));
-        table.getTableHeader().setBackground(new Color(0, 102, 204));
-        table.getTableHeader().setForeground(Color.WHITE);
-
-        // Renderer màu cho cột Hạn trả
-        table.getColumn("Hạn trả").setCellRenderer(new javax.swing.table.DefaultTableCellRenderer() {
-            @Override
-            public Component getTableCellRendererComponent(JTable tbl, Object value, boolean isSelected, boolean hasFocus, int row, int col) {
-                Component c = super.getTableCellRendererComponent(tbl, value, isSelected, hasFocus, row, col);
-                String hanTra = value == null ? "" : value.toString();
-                if (hanTra.matches("\\d+ ngày")) {
-                    int days = Integer.parseInt(hanTra.replaceAll("[^0-9]", ""));
-                    if (days > 3) {
-                        c.setForeground(new Color(0, 128, 0)); // xanh
-                    } else if (days > 0) {
-                        c.setForeground(new Color(255, 140, 0)); // cam cảnh báo
-                    } else {
-                        c.setForeground(Color.RED);
-                    }
-                } else if (hanTra.startsWith("Quá hạn")) {
-                    c.setForeground(Color.RED);
-                } else if (hanTra.equals("Hết hạn")) {
-                    c.setForeground(Color.RED);
-                } else {
-                    c.setForeground(Color.BLACK);
-                }
-                return c;
-            }
-        });
-
-        JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 18, 10, 18));
-
-        JPanel btnPanel = new JPanel();
-        btnPanel.setBackground(new Color(232, 242, 255));
-        GroupLayout btnLayout = new GroupLayout(btnPanel);
-        btnPanel.setLayout(btnLayout);
-        btnLayout.setAutoCreateGaps(true);
-        btnLayout.setAutoCreateContainerGaps(true);
-
-        btnBack = new JButton("Quay lại");
-        btnBack.setBackground(new Color(0, 102, 204));
-        btnBack.setForeground(Color.WHITE);
-        btnBack.setFont(new Font("Segoe UI", Font.BOLD, 15));
-
-        // Xóa nút làm mới
-        btnLayout.setHorizontalGroup(
-            btnLayout.createSequentialGroup()
-                .addComponent(btnBack, GroupLayout.PREFERRED_SIZE, 180, GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 720, Short.MAX_VALUE)
-        );
-        btnLayout.setVerticalGroup(
-            btnLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                .addComponent(btnBack)
-        );
-
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(GroupLayout.Alignment.CENTER)
-                .addComponent(lblTitle)
-                .addComponent(scrollPane)
-                .addComponent(btnPanel)
-        );
-        layout.setVerticalGroup(
-            layout.createSequentialGroup()
-                .addGap(18)
-                .addComponent(lblTitle)
-                .addComponent(scrollPane)
-                .addGap(10)
-                .addComponent(btnPanel, GroupLayout.PREFERRED_SIZE, 50, GroupLayout.PREFERRED_SIZE)
-        );
-
-        btnBack.addActionListener(e -> dispose());
-
-        // Tự động cập nhật danh sách khi cửa sổ được kích hoạt lại (focus lại)
-        addWindowFocusListener(new java.awt.event.WindowAdapter() {
-            @Override
-            public void windowGainedFocus(java.awt.event.WindowEvent e) {
-                loadBorrowedBooks();
-            }
-        });
-
-        // Tự động cập nhật khi cửa sổ được hiển thị lại
-        addWindowListener(new java.awt.event.WindowAdapter() {
-            @Override
-            public void windowActivated(java.awt.event.WindowEvent e) {
-                loadBorrowedBooks();
-            }
-        });
-
-        loadBorrowedBooks();
-        pack();
+        setTitle("Sách đang mượn");
+        setSize(1000, 650);
         setLocationRelativeTo(null);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        
+        showBorrowedBooksDialog();
     }
 
-    // Tải danh sách tất cả sách đã mượn (chỉ hiển thị sách chưa trả)
-    private void loadBorrowedBooks() {
-        tableModel.setRowCount(0);
-        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:C:/data/library.db")) {
-            String sql = "SELECT b.id, b.title, b.author, br.borrow_date, br.return_date " +
-                         "FROM borrows br JOIN books b ON br.book_id = b.id " +
-                         "WHERE br.user_id = ? AND (br.return_date IS NULL OR br.return_date = '' OR br.return_date = 'null') " +
-                         "ORDER BY br.borrow_date DESC";
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ps.setInt(1, userId);
-            ResultSet rs = ps.executeQuery();
-            java.time.LocalDate now = java.time.LocalDate.now();
-            while (rs.next()) {
-                String borrowDate = rs.getString("borrow_date");
-                String returnDate = rs.getString("return_date");
-                // Tính hạn trả dựa trên ngày trả đã đăng ký (nếu có)
-                String hanTra = "";
-                try {
-                    java.time.LocalDate returnDateObj = null;
-                    if (returnDate != null && !returnDate.trim().isEmpty() && !"null".equalsIgnoreCase(returnDate)) {
-                        returnDateObj = java.time.LocalDate.parse(returnDate);
-                    }
-                    if (returnDateObj != null) {
-                        long daysLeft = java.time.temporal.ChronoUnit.DAYS.between(now, returnDateObj);
-                        if (now.isAfter(returnDateObj)) {
-                            hanTra = "Quá hạn " + Math.abs(daysLeft) + " ngày";
-                        } else if (daysLeft > 1) {
-                            hanTra = daysLeft + " ngày";
-                        } else if (daysLeft == 1) {
-                            hanTra = "1 ngày";
-                        } else if (daysLeft == 0) {
-                            hanTra = "Hết hạn";
-                        }
-                    }
-                } catch (Exception ignore) {}
+    private void connectToServer() {
+        try {
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+            }
+            socket = new Socket("localhost", 12345);
+            out = new PrintWriter(socket.getOutputStream(), true);
+            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            in.readLine(); // WELCOME message
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, 
+                "Không thể kết nối đến server: " + ex.getMessage(), 
+                "Lỗi kết nối", 
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
 
-                tableModel.addRow(new Object[]{
-                    rs.getInt("id"),
-                    rs.getString("title"),
-                    rs.getString("author"),
-                    borrowDate != null ? borrowDate : "",
-                    returnDate != null ? returnDate : "",
-                    hanTra
-                });
+    private void showBorrowedBooksDialog() {
+        if (userId == -1) {
+            JOptionPane.showMessageDialog(this, "Vui lòng đăng nhập để xem sách đã mượn!");
+            return;
+        }
+        
+        try {
+            if (socket == null || socket.isClosed() || out == null || in == null) {
+                connectToServer();
+            }
+            
+            out.println("LIST_BORROWED|" + userId);
+            String resp = in.readLine();
+            
+            if (resp != null && resp.startsWith("BORROWED_LIST|")) {
+                String data = resp.substring("BORROWED_LIST|".length());
+                String[] books = data.split(";");
+                
+                if (books.length > 0 && !books[0].isEmpty()) {
+                    createBorrowedBooksDialog(books);
+                } else {
+                    JOptionPane.showMessageDialog(this, "Bạn chưa mượn sách nào!", "Sách đang mượn", JOptionPane.INFORMATION_MESSAGE);
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Không thể tải danh sách sách đã mượn!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Lỗi đọc dữ liệu: " + ex.getMessage());
+            JOptionPane.showMessageDialog(this, "Lỗi: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
+    }
+    
+    private void createBorrowedBooksDialog(String[] books) {
+        // Main panel with gradient background
+        JPanel mainPanel = new JPanel(new BorderLayout(15, 15)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                
+                Color startColor = new Color(240, 248, 255);
+                Color endColor = new Color(230, 240, 250);
+                GradientPaint gradient = new GradientPaint(0, 0, startColor, 0, getHeight(), endColor);
+                g2d.setPaint(gradient);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        // Header
+        JLabel headerLabel = new JLabel("Danh sách sách đang mượn", SwingConstants.CENTER);
+        headerLabel.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        headerLabel.setForeground(new Color(220, 53, 69));
+        headerLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
+        
+        // Table with enhanced styling
+        String[] columnNames = {"STT", "Tên sách", "Tác giả", "Ngày mượn", "Hạn trả", "Trạng thái"};
+        DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        
+        // Populate table data
+        for (int i = 0; i < books.length; i++) {
+            String book = books[i].trim();
+            if (!book.isEmpty()) {
+                String[] parts = book.split(",");
+                if (parts.length >= 4) {
+                    String status = "Đang mượn";
+                    model.addRow(new Object[]{
+                        i + 1,
+                        parts[0], // title
+                        parts[1], // author
+                        parts[2], // borrow date
+                        parts[3], // due date
+                        status
+                    });
+                }
+            }
+        }
+        
+        JTable table = new JTable(model);
+        table.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        table.setRowHeight(50);
+        table.setSelectionBackground(new Color(220, 53, 69, 50));
+        table.setSelectionForeground(new Color(220, 53, 69));
+        table.setGridColor(new Color(222, 226, 230));
+        table.setShowGrid(true);
+        table.setIntercellSpacing(new Dimension(1, 1));
+        
+        // Enhanced table header
+        JTableHeader header = table.getTableHeader();
+        header.setBackground(new Color(220, 53, 69));
+        header.setForeground(Color.WHITE);
+        header.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        header.setPreferredSize(new Dimension(0, 45));
+        
+        // Column widths
+        table.getColumnModel().getColumn(0).setPreferredWidth(60);
+        table.getColumnModel().getColumn(1).setPreferredWidth(250);
+        table.getColumnModel().getColumn(2).setPreferredWidth(180);
+        table.getColumnModel().getColumn(3).setPreferredWidth(120);
+        table.getColumnModel().getColumn(4).setPreferredWidth(120);
+        table.getColumnModel().getColumn(5).setPreferredWidth(140);
+        
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(220, 53, 69), 2),
+            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
+        scrollPane.getViewport().setBackground(Color.WHITE);
+        
+        // Info cards panel
+        JPanel infoPanel = new JPanel(new GridLayout(1, 3, 15, 0));
+        infoPanel.setOpaque(false);
+        
+        JPanel totalPanel = createBorrowInfoCard("Tổng số sách", String.valueOf(model.getRowCount()), new Color(220, 53, 69));
+        JPanel overduePanel = createBorrowInfoCard("Quá hạn", "0", new Color(255, 193, 7));
+        JPanel nearDuePanel = createBorrowInfoCard("Sắp hết hạn", "1", new Color(255, 108, 0));
+        
+        infoPanel.add(totalPanel);
+        infoPanel.add(overduePanel);
+        infoPanel.add(nearDuePanel);
+        
+        // Button panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        buttonPanel.setOpaque(false);
+        
+        JButton refreshBtn = new JButton("Làm mới");
+        refreshBtn.setPreferredSize(new Dimension(120, 40));
+        refreshBtn.setBackground(new Color(40, 167, 69));
+        refreshBtn.setForeground(Color.WHITE);
+        refreshBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        refreshBtn.setFocusPainted(false);
+        refreshBtn.addActionListener(e -> {
+            dispose();
+            new BorrowListUI(userId).setVisible(true);
+        });
+        
+        JButton closeBtn = new JButton("Đóng");
+        closeBtn.setPreferredSize(new Dimension(100, 40));
+        closeBtn.setBackground(new Color(220, 53, 69));
+        closeBtn.setForeground(Color.WHITE);
+        closeBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        closeBtn.setFocusPainted(false);
+        closeBtn.addActionListener(e -> dispose());
+        
+        buttonPanel.add(refreshBtn);
+        buttonPanel.add(closeBtn);
+        
+        // Layout assembly
+        JPanel centerPanel = new JPanel(new BorderLayout(0, 15));
+        centerPanel.setOpaque(false);
+        centerPanel.add(infoPanel, BorderLayout.NORTH);
+        centerPanel.add(scrollPane, BorderLayout.CENTER);
+        
+        mainPanel.add(headerLabel, BorderLayout.NORTH);
+        mainPanel.add(centerPanel, BorderLayout.CENTER);
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+        
+        setContentPane(mainPanel);
+        setVisible(true);
+    }
+    
+    private JPanel createBorrowInfoCard(String title, String value, Color color) {
+        JPanel card = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                Color startColor = Color.WHITE;
+                Color endColor = new Color(248, 249, 250);
+                GradientPaint gradient = new GradientPaint(0, 0, startColor, 0, getHeight(), endColor);
+                g2d.setPaint(gradient);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
+        
+        card.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(color, 2),
+            BorderFactory.createEmptyBorder(15, 15, 15, 15)
+        ));
+        
+        JLabel titleLabel = new JLabel(title, SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        titleLabel.setForeground(color);
+        
+        JLabel valueLabel = new JLabel(value, SwingConstants.CENTER);
+        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        valueLabel.setForeground(new Color(33, 37, 41));
+        
+        card.add(titleLabel, BorderLayout.NORTH);
+        card.add(valueLabel, BorderLayout.CENTER);
+        
+        return card;
     }
 }

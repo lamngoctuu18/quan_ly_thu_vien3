@@ -2,8 +2,8 @@ package app;
 
 import server.LibraryServer;
 import client.ClientUI;
-import client.AdminUI;
-import client.RegisterUI; 
+import client.RegisterUI;
+import client.AdminLoginUI; 
 
 import javax.swing.*;
 import java.awt.*;
@@ -11,7 +11,6 @@ import java.awt.event.*;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Scanner;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -19,7 +18,6 @@ import java.sql.ResultSet;
 public class MainApp {
     public static void main(String[] args) {
         // Kiểm tra server đã chạy chưa, nếu chưa thì mới khởi động
-        boolean serverStarted = false;
         try (ServerSocket ss = new ServerSocket(12345)) {
             ss.close();
             // Nếu tạo được ServerSocket thì server chưa chạy, khởi động server
@@ -30,10 +28,8 @@ public class MainApp {
                     e.printStackTrace();
                 }
             }).start();
-            serverStarted = true;
         } catch (Exception ex) {
             // Nếu không tạo được ServerSocket thì server đã chạy
-            serverStarted = false;
         }
 
         // Hiển thị giao diện đăng nhập
@@ -136,6 +132,22 @@ public class MainApp {
                 BorderFactory.createEmptyBorder(8, 12, 8, 12)
             ));
             cbRole.setPreferredSize(new Dimension(280, 40));
+
+            // Add action listener to role ComboBox for automatic admin redirect
+            cbRole.addActionListener(e -> {
+                String selectedRole = cbRole.getSelectedItem().toString();
+                if ("Quản trị viên".equals(selectedRole)) {
+                    // Reset ComboBox to prevent auto-redirect on return
+                    cbRole.setSelectedIndex(0);
+                    frame.dispose();
+                    SwingUtilities.invokeLater(() -> {
+                        new AdminLoginUI(() -> {
+                            // Callback to return to main login
+                            main(null);
+                        }).setVisible(true);
+                    });
+                }
+            });
 
             JLabel lblUser = new JLabel("Tên đăng nhập:");
             lblUser.setForeground(new Color(52, 58, 64));
@@ -304,17 +316,15 @@ public class MainApp {
             );
 
             btnLogin.addActionListener(e -> {
-                String username = txtUser.getText();
-                String password = new String(txtPass.getPassword());
-                String selectedRole = cbRole.getSelectedItem().toString();
                 lblMsg.setText("");
 
-                // Admin validation
-                if ("Quản trị viên".equals(selectedRole)) {
-                    if (!("admin".equals(username) && "admin".equals(password))) {
-                        lblMsg.setText("Sai tên đăng nhập hoặc mật khẩu quản trị!");
-                        return;
-                    }
+                // Handle regular user login (admin is handled by ComboBox listener)
+                String username = txtUser.getText();
+                String password = new String(txtPass.getPassword());
+
+                if (username.isEmpty() || password.isEmpty()) {
+                    lblMsg.setText("Vui lòng nhập đầy đủ thông tin!");
+                    return;
                 }
 
                 try (Socket socket = new Socket("localhost", 12345);
@@ -329,26 +339,29 @@ public class MainApp {
                         int userId = Integer.parseInt(p[1]);
                         String role = p[2];
 
-                        // Check if role matches selected role
-                        if ("Quản trị viên".equals(selectedRole) && !"admin".equals(role)) {
-                            lblMsg.setText("Tài khoản này không có quyền quản trị!");
-                            return;
-                        }
-                        if ("Người dùng".equals(selectedRole) && "admin".equals(role)) {
-                            lblMsg.setText("Vui lòng chọn đúng vai trò quản trị viên!");
+                        // Only allow regular users in this interface
+                        if ("admin".equals(role)) {
+                            lblMsg.setText("Vui lòng chọn vai trò quản trị viên để đăng nhập!");
                             return;
                         }
 
                         frame.dispose();
-                        if ("admin".equals(role)) {
-                            SwingUtilities.invokeLater(() -> new AdminUI().setVisible(true));
-                        } else {
-                            SwingUtilities.invokeLater(() -> {
-                                ClientUI ui = new ClientUI();
-                                ui.setUserInfo(userId, username);
-                                ui.setVisible(true);
-                            });
-                        }
+                        SwingUtilities.invokeLater(() -> {
+                            ClientUI ui = new ClientUI();
+                            ui.setUserInfo(userId, username);
+                            ui.setVisible(true);
+                        });
+                    } else if (resp.startsWith("LOGIN_FAIL|ACCOUNT_LOCKED")) {
+                        // Handle locked account
+                        String[] parts = resp.split("\\|", 3);
+                        String message = parts.length > 2 ? parts[2] : "Tài khoản đã bị khóa";
+                        
+                        JOptionPane.showMessageDialog(frame,
+                            "🔒 " + message,
+                            "Tài khoản bị khóa",
+                            JOptionPane.WARNING_MESSAGE);
+                        
+                        lblMsg.setText("Tài khoản đã bị khóa!");
                     } else {
                         lblMsg.setText("Đăng nhập thất bại!");
                     }

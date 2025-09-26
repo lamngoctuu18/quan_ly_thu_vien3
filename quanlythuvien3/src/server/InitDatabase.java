@@ -139,6 +139,18 @@ public class InitDatabase {
                 // Cột đã tồn tại
             }
 
+            // Tạo bảng notifications (thông báo)
+            stmt.execute("CREATE TABLE IF NOT EXISTS notifications (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                    "user_id INTEGER NOT NULL," +
+                    "type TEXT NOT NULL," + // borrow_approved, borrow_rejected, new_book, reminder, system
+                    "title TEXT NOT NULL," +
+                    "content TEXT NOT NULL," +
+                    "created_at TEXT NOT NULL," +
+                    "is_read INTEGER DEFAULT 0," + // 0 = chưa đọc, 1 = đã đọc
+                    "FOREIGN KEY (user_id) REFERENCES users(id)" +
+                    ")");
+
             // Tạo admin mặc định
             stmt.execute("DELETE FROM users WHERE username='admin'"); // Xóa nếu đã tồn tại
             stmt.execute("INSERT INTO users(username, password, role, phone, email) " + 

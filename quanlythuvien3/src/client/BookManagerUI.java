@@ -31,22 +31,43 @@ public class BookManagerUI extends JFrame {
 
     public BookManagerUI() {
         setTitle("Quản lý sách");
-        setMinimumSize(new Dimension(750, 450));
-        setPreferredSize(new Dimension(950, 650));
+        setMinimumSize(new Dimension(1000, 650));
+        setPreferredSize(new Dimension(1300, 800));
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
 
         cardLayout = new CardLayout();
-        mainPanel = new JPanel(cardLayout);
+        mainPanel = new JPanel(cardLayout) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                
+                GradientPaint gradient = new GradientPaint(
+                    0, 0, new Color(248, 250, 252),
+                    0, getHeight(), new Color(238, 242, 247)
+                );
+                g2d.setPaint(gradient);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
 
         // Panel quản lý sách (bảng)
-        JPanel listPanel = new JPanel(new BorderLayout());
-        listPanel.setBackground(new Color(232, 242, 255));
+        JPanel listPanel = new JPanel(new BorderLayout(0, 25));
+        listPanel.setOpaque(false);
+        listPanel.setBorder(BorderFactory.createEmptyBorder(25, 25, 25, 25));
+        
+        // Header panel
+        JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 10));
+        headerPanel.setOpaque(false);
+        
         JLabel lblTitle = new JLabel("Quản lý sách");
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 22));
-        lblTitle.setForeground(new Color(0, 51, 102));
-        lblTitle.setBorder(BorderFactory.createEmptyBorder(18, 18, 0, 0));
-        listPanel.add(lblTitle, BorderLayout.NORTH);
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        lblTitle.setForeground(new Color(31, 81, 135));
+        
+        headerPanel.add(lblTitle);
+        listPanel.add(headerPanel, BorderLayout.NORTH);
 
         String[] cols = {"ID sách", "Ảnh bìa", "Tên sách", "Tác giả", "Nhà XB", "Năm XB", "Thể loại", "SL", "Thao tác"};
         tableModel = new DefaultTableModel(cols, 0) {
@@ -55,26 +76,42 @@ public class BookManagerUI extends JFrame {
             }
         };
         table = new JTable(tableModel);
-        table.setRowHeight(28);
-        table.getTableHeader().setBackground(new Color(0, 102, 204));
+        table.setRowHeight(40);
+        table.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        table.setGridColor(new Color(233, 236, 239));
+        table.setSelectionBackground(new Color(240, 248, 255));
+        table.setSelectionForeground(new Color(31, 81, 135));
+        table.setIntercellSpacing(new Dimension(0, 1));
+        
+        // Header styling
+        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
+        table.getTableHeader().setBackground(new Color(31, 81, 135));
         table.getTableHeader().setForeground(Color.WHITE);
-        table.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        table.getTableHeader().setBorder(BorderFactory.createEmptyBorder(12, 0, 12, 0));
         
         // Renderer và Editor cho cột Thao tác
         table.getColumn("Thao tác").setCellRenderer(new javax.swing.table.TableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable tbl, Object value, boolean isSelected, boolean hasFocus, int row, int col) {
-                JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 2, 0));
+                JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
+                panel.setOpaque(false);
+                
                 JButton btnEdit = new JButton("Sửa");
-                btnEdit.setBackground(new Color(255, 153, 51));
+                btnEdit.setFont(new Font("Segoe UI", Font.BOLD, 12));
+                btnEdit.setBackground(new Color(255, 193, 7));
                 btnEdit.setForeground(Color.WHITE);
-                btnEdit.setPreferredSize(new Dimension(60, 22));
-                btnEdit.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+                btnEdit.setPreferredSize(new Dimension(65, 28));
+                btnEdit.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+                btnEdit.setFocusPainted(false);
+                
                 JButton btnDelete = new JButton("Xóa");
-                btnDelete.setBackground(new Color(204, 0, 0));
+                btnDelete.setFont(new Font("Segoe UI", Font.BOLD, 12));
+                btnDelete.setBackground(new Color(220, 53, 69));
                 btnDelete.setForeground(Color.WHITE);
-                btnDelete.setPreferredSize(new Dimension(60, 22));
-                btnDelete.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+                btnDelete.setPreferredSize(new Dimension(65, 28));
+                btnDelete.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+                btnDelete.setFocusPainted(false);
+                
                 panel.add(btnEdit);
                 panel.add(btnDelete);
                 return panel;
@@ -82,18 +119,27 @@ public class BookManagerUI extends JFrame {
         });
         
         table.getColumn("Thao tác").setCellEditor(new javax.swing.DefaultCellEditor(new JCheckBox()) {
-            private JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 2, 0));
+            private JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
             private JButton btnEdit = new JButton("Sửa");
             private JButton btnDelete = new JButton("Xóa");
             {
-                btnEdit.setBackground(new Color(255, 153, 51));
+                panel.setOpaque(false);
+                
+                btnEdit.setFont(new Font("Segoe UI", Font.BOLD, 12));
+                btnEdit.setBackground(new Color(255, 193, 7));
                 btnEdit.setForeground(Color.WHITE);
-                btnEdit.setPreferredSize(new Dimension(60, 22));
-                btnEdit.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-                btnDelete.setBackground(new Color(204, 0, 0));
+                btnEdit.setPreferredSize(new Dimension(65, 28));
+                btnEdit.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+                btnEdit.setFocusPainted(false);
+                btnEdit.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                
+                btnDelete.setFont(new Font("Segoe UI", Font.BOLD, 12));
+                btnDelete.setBackground(new Color(220, 53, 69));
                 btnDelete.setForeground(Color.WHITE);
-                btnDelete.setPreferredSize(new Dimension(60, 22));
-                btnDelete.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+                btnDelete.setPreferredSize(new Dimension(65, 28));
+                btnDelete.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+                btnDelete.setFocusPainted(false);
+                btnDelete.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
                 
                 btnEdit.addActionListener(e -> {
                     int row = table.getEditingRow();
@@ -117,27 +163,48 @@ public class BookManagerUI extends JFrame {
         });
         
         // Đặt kích thước cột "Thao tác" rộng hơn
-        table.getColumn("Thao tác").setPreferredWidth(130);
-        table.getColumn("Thao tác").setMinWidth(130);
-        table.getColumn("Thao tác").setMaxWidth(150);
+        table.getColumn("Thao tác").setPreferredWidth(150);
+        table.getColumn("Thao tác").setMinWidth(150);
+        table.getColumn("Thao tác").setMaxWidth(180);
+        
+        // Table panel with border
+        JPanel tablePanel = new JPanel(new BorderLayout());
+        tablePanel.setOpaque(false);
+        tablePanel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(new Color(31, 81, 135), 1, true),
+            "Danh sách sách",
+            javax.swing.border.TitledBorder.LEFT,
+            javax.swing.border.TitledBorder.TOP,
+            new Font("Segoe UI", Font.PLAIN, 14),
+            new Color(31, 81, 135)
+        ));
         
         JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 18, 10, 18));
-        listPanel.add(scrollPane, BorderLayout.CENTER);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
+        scrollPane.getViewport().setBackground(Color.WHITE);
+        tablePanel.add(scrollPane, BorderLayout.CENTER);
+        
+        listPanel.add(tablePanel, BorderLayout.CENTER);
 
-        JPanel bottomPanel = new JPanel(new BorderLayout());
-        bottomPanel.setBackground(new Color(232, 242, 255));
+        // Bottom panel
+        JPanel bottomPanel = new JPanel(new BorderLayout(20, 0));
+        bottomPanel.setOpaque(false);
+        bottomPanel.setBorder(BorderFactory.createEmptyBorder(15, 0, 0, 0));
+        
         lblCount = new JLabel("Số lượng sách hiện tại:");
-        lblCount.setFont(new Font("Segoe UI", Font.PLAIN, 15));
-        lblCount.setForeground(new Color(0, 102, 204));
+        lblCount.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        lblCount.setForeground(new Color(52, 58, 64));
         bottomPanel.add(lblCount, BorderLayout.WEST);
+        
         JButton btnAddNew = new JButton("Thêm sách mới");
-        btnAddNew.setBackground(new Color(0, 153, 76));
+        btnAddNew.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnAddNew.setBackground(new Color(40, 167, 69));
         btnAddNew.setForeground(Color.WHITE);
-        btnAddNew.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        btnAddNew.setBorder(BorderFactory.createEmptyBorder(12, 24, 12, 24));
+        btnAddNew.setFocusPainted(false);
+        btnAddNew.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         bottomPanel.add(btnAddNew, BorderLayout.EAST);
 
-        bottomPanel.setBorder(BorderFactory.createEmptyBorder(10, 18, 10, 18));
         listPanel.add(bottomPanel, BorderLayout.SOUTH);
 
         // Panel thêm sách mới (form) với GridBagLayout
@@ -164,166 +231,210 @@ public class BookManagerUI extends JFrame {
     }
 
     private JPanel createAddPanel() {
-        JPanel addPanel = new JPanel();
-        addPanel.setBackground(new Color(255, 245, 230));
-        GridBagLayout gbl = new GridBagLayout();
-        addPanel.setLayout(gbl);
+        JPanel addPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                
+                GradientPaint gradient = new GradientPaint(
+                    0, 0, new Color(248, 250, 252),
+                    0, getHeight(), new Color(238, 242, 247)
+                );
+                g2d.setPaint(gradient);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
+        addPanel.setLayout(new BorderLayout(0, 25));
+        addPanel.setBorder(BorderFactory.createEmptyBorder(25, 25, 25, 25));
+
+        // Header
+        JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        headerPanel.setOpaque(false);
+        JLabel lblFormTitle = new JLabel("Thêm sách mới vào thư viện");
+        lblFormTitle.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        lblFormTitle.setForeground(new Color(31, 81, 135));
+        headerPanel.add(lblFormTitle);
+        addPanel.add(headerPanel, BorderLayout.NORTH);
+
+        // Content panel with form and image preview
+        JPanel contentPanel = new JPanel(new BorderLayout(30, 0));
+        contentPanel.setOpaque(false);
+        
+        // Form panel
+        JPanel formPanel = createFormPanel();
+        contentPanel.add(formPanel, BorderLayout.CENTER);
+        
+        // Image preview panel
+        JPanel imagePanel = createImagePreviewPanel();
+        contentPanel.add(imagePanel, BorderLayout.EAST);
+        
+        addPanel.add(contentPanel, BorderLayout.CENTER);
+
+        // Button panel
+        JPanel buttonPanel = createAddFormButtonPanel();
+        addPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        return addPanel;
+    }
+    
+    private JPanel createFormPanel() {
+        JPanel formPanel = new JPanel();
+        formPanel.setOpaque(false);
+        formPanel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(new Color(31, 81, 135), 1, true),
+            "Thông tin sách",
+            javax.swing.border.TitledBorder.LEFT,
+            javax.swing.border.TitledBorder.TOP,
+            new Font("Segoe UI", Font.PLAIN, 14),
+            new Color(31, 81, 135)
+        ));
+        
+        formPanel.setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.anchor = GridBagConstraints.WEST;
 
-        // Preview panel (ảnh bìa)
-        JPanel previewPanel = new JPanel();
-        previewPanel.setBackground(Color.WHITE);
-        previewPanel.setBorder(BorderFactory.createLineBorder(Color.GRAY));
-        previewPanel.setPreferredSize(new Dimension(150, 200));
-        lblImagePreview = new JLabel("Xem trước ảnh bìa");
-        lblImagePreview.setHorizontalAlignment(SwingConstants.CENTER);
-        previewPanel.add(lblImagePreview);
-
-        // URL input + preview button với style đẹp và kích thước cố định
-        JPanel urlPanel = new JPanel(new BorderLayout(5, 0));
-        urlPanel.setBackground(new Color(255, 245, 230));
-        urlPanel.setPreferredSize(new Dimension(280, 40));
-        urlPanel.setMinimumSize(new Dimension(280, 40));
-        urlPanel.setMaximumSize(new Dimension(280, 40));
+        // Initialize form components
+        txtTitle = createStyledTextField("", 25);
+        txtAuthor = createStyledTextField("", 25);
+        txtPublisher = createStyledTextField("", 25);
+        txtYear = createStyledTextField("", 25);
+        txtQuantity = createStyledTextField("", 25);
         
-        txtCoverImage = createStyledTextField("", 20);
-        // Override kích thước cho txtCoverImage trong panel
-        txtCoverImage.setPreferredSize(new Dimension(200, 40));
-        
-        JButton btnPreview = new JButton("👁️ Xem");
-        btnPreview.setBackground(new Color(103, 58, 183));
-        btnPreview.setForeground(Color.WHITE);
-        btnPreview.setFont(new Font("Segoe UI", Font.BOLD, 11));
-        btnPreview.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
-        btnPreview.setFocusPainted(false);
-        btnPreview.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnPreview.setPreferredSize(new Dimension(75, 40));
-        btnPreview.addActionListener(e -> previewImage());
-        
-        urlPanel.add(txtCoverImage, BorderLayout.CENTER);
-        urlPanel.add(btnPreview, BorderLayout.EAST);
-
-        // Các trường nhập liệu với style đẹp
-        txtTitle = createStyledTextField("", 18);
-        txtAuthor = createStyledTextField("", 18);
-        txtPublisher = createStyledTextField("", 18);
-        txtYear = createStyledTextField("", 18);
-        txtQuantity = createStyledTextField("", 18);
-        
-        // Thêm trường mô tả sách với kích thước cố định
-        txtDescription = new JTextArea(3, 18);
-        txtDescription.setBackground(Color.WHITE);
+        txtDescription = new JTextArea(4, 25);
         txtDescription.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         txtDescription.setLineWrap(true);
         txtDescription.setWrapStyleWord(true);
-        txtDescription.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
+        txtDescription.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(206, 212, 218)),
+            BorderFactory.createEmptyBorder(8, 12, 8, 12)
+        ));
         JScrollPane scrollDescription = new JScrollPane(txtDescription);
         scrollDescription.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        scrollDescription.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220), 1));
-        // Đặt kích thước giống với textfield nhưng cao hơn
-        scrollDescription.setPreferredSize(new Dimension(280, 80));
-        scrollDescription.setMinimumSize(new Dimension(280, 80));
-        scrollDescription.setMaximumSize(new Dimension(280, 80));
+        scrollDescription.setPreferredSize(new Dimension(350, 100));
         
         cbCategory = new JComboBox<>(CATEGORIES);
-        cbCategory.setBackground(Color.WHITE);
         cbCategory.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         cbCategory.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(220, 220, 220), 1),
+            BorderFactory.createLineBorder(new Color(206, 212, 218)),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
         ));
-        // Đặt kích thước giống với textfield
-        cbCategory.setPreferredSize(new Dimension(280, 40));
-        cbCategory.setMinimumSize(new Dimension(280, 40));
-        cbCategory.setMaximumSize(new Dimension(280, 40));
+        cbCategory.setPreferredSize(new Dimension(350, 40));
 
-        // Nút với style đẹp hơn
-        JButton btnAddBook = new JButton("➕ Thêm sách");
-        btnAddBook.setBackground(new Color(76, 175, 80));
+        // URL panel
+        JPanel urlPanel = new JPanel(new BorderLayout(5, 0));
+        urlPanel.setOpaque(false);
+        txtCoverImage = createStyledTextField("", 20);
+        JButton btnPreview = new JButton("Xem trước");
+        btnPreview.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btnPreview.setBackground(new Color(31, 81, 135));
+        btnPreview.setForeground(Color.WHITE);
+        btnPreview.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
+        btnPreview.setFocusPainted(false);
+        btnPreview.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnPreview.addActionListener(e -> previewImage());
+        urlPanel.add(txtCoverImage, BorderLayout.CENTER);
+        urlPanel.add(btnPreview, BorderLayout.EAST);
+
+        // Add components to form
+        gbc.gridx = 0; gbc.gridy = 0;
+        formPanel.add(createStyledLabel("Tên sách:"), gbc);
+        gbc.gridx = 1;
+        formPanel.add(txtTitle, gbc);
+
+        gbc.gridx = 0; gbc.gridy++;
+        formPanel.add(createStyledLabel("Tác giả:"), gbc);
+        gbc.gridx = 1;
+        formPanel.add(txtAuthor, gbc);
+
+        gbc.gridx = 0; gbc.gridy++;
+        formPanel.add(createStyledLabel("Nhà xuất bản:"), gbc);
+        gbc.gridx = 1;
+        formPanel.add(txtPublisher, gbc);
+
+        gbc.gridx = 0; gbc.gridy++;
+        formPanel.add(createStyledLabel("Năm xuất bản:"), gbc);
+        gbc.gridx = 1;
+        formPanel.add(txtYear, gbc);
+
+        gbc.gridx = 0; gbc.gridy++;
+        formPanel.add(createStyledLabel("Số lượng:"), gbc);
+        gbc.gridx = 1;
+        formPanel.add(txtQuantity, gbc);
+
+        gbc.gridx = 0; gbc.gridy++;
+        formPanel.add(createStyledLabel("Thể loại:"), gbc);
+        gbc.gridx = 1;
+        formPanel.add(cbCategory, gbc);
+
+        gbc.gridx = 0; gbc.gridy++;
+        formPanel.add(createStyledLabel("Mô tả sách:"), gbc);
+        gbc.gridx = 1;
+        formPanel.add(scrollDescription, gbc);
+
+        gbc.gridx = 0; gbc.gridy++;
+        formPanel.add(createStyledLabel("URL ảnh bìa:"), gbc);
+        gbc.gridx = 1;
+        formPanel.add(urlPanel, gbc);
+
+        return formPanel;
+    }
+    
+    private JPanel createImagePreviewPanel() {
+        JPanel imagePanel = new JPanel(new BorderLayout());
+        imagePanel.setOpaque(false);
+        imagePanel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(new Color(31, 81, 135), 1, true),
+            "Xem trước ảnh bìa",
+            javax.swing.border.TitledBorder.LEFT,
+            javax.swing.border.TitledBorder.TOP,
+            new Font("Segoe UI", Font.PLAIN, 14),
+            new Color(31, 81, 135)
+        ));
+        
+        JPanel previewPanel = new JPanel();
+        previewPanel.setBackground(Color.WHITE);
+        previewPanel.setBorder(BorderFactory.createLineBorder(new Color(206, 212, 218), 1, true));
+        previewPanel.setPreferredSize(new Dimension(200, 280));
+        previewPanel.setLayout(new BorderLayout());
+        
+        lblImagePreview = new JLabel("Chưa có ảnh", SwingConstants.CENTER);
+        lblImagePreview.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        lblImagePreview.setForeground(new Color(108, 117, 125));
+        previewPanel.add(lblImagePreview, BorderLayout.CENTER);
+        
+        imagePanel.add(previewPanel, BorderLayout.CENTER);
+        return imagePanel;
+    }
+    
+    private JPanel createAddFormButtonPanel() {
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
+        buttonPanel.setOpaque(false);
+        
+        JButton btnAddBook = new JButton("Thêm sách");
+        btnAddBook.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnAddBook.setBackground(new Color(40, 167, 69));
         btnAddBook.setForeground(Color.WHITE);
-        btnAddBook.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        btnAddBook.setBorder(BorderFactory.createEmptyBorder(12, 25, 12, 25));
+        btnAddBook.setBorder(BorderFactory.createEmptyBorder(12, 24, 12, 24));
         btnAddBook.setFocusPainted(false);
-        btnAddBook.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        
-        JButton btnBack = new JButton("🔙 Quay lại");
-        btnBack.setBackground(new Color(96, 125, 139));
-        btnBack.setForeground(Color.WHITE);
-        btnBack.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        btnBack.setBorder(BorderFactory.createEmptyBorder(12, 25, 12, 25));
-        btnBack.setFocusPainted(false);
-        btnBack.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
-        btnPanel.setBackground(new Color(255, 245, 230));
-        btnPanel.add(btnAddBook);
-        btnPanel.add(btnBack);
-
-        // Bố cục 2 cột: trái là form, phải là ảnh
-        gbc.insets = new Insets(10, 10, 10, 10);
-        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.WEST;
-        JLabel lblFormTitle = new JLabel("📚 Thêm sách mới vào thư viện");
-        lblFormTitle.setFont(new Font("Segoe UI", Font.BOLD, 22));
-        lblFormTitle.setForeground(new Color(25, 118, 210));
-        addPanel.add(lblFormTitle, gbc);
-
-        gbc.gridwidth = 1;
-        gbc.gridy++;
-        addPanel.add(createStyledLabel("📖 Tên sách:"), gbc);
-        gbc.gridx = 1;
-        addPanel.add(txtTitle, gbc);
-
-        gbc.gridx = 0; gbc.gridy++;
-        addPanel.add(createStyledLabel("✍️ Tác giả:"), gbc);
-        gbc.gridx = 1;
-        addPanel.add(txtAuthor, gbc);
-
-        gbc.gridx = 0; gbc.gridy++;
-        addPanel.add(createStyledLabel("🏢 Nhà xuất bản:"), gbc);
-        gbc.gridx = 1;
-        addPanel.add(txtPublisher, gbc);
-
-        gbc.gridx = 0; gbc.gridy++;
-        addPanel.add(createStyledLabel("📅 Năm xuất bản:"), gbc);
-        gbc.gridx = 1;
-        addPanel.add(txtYear, gbc);
-
-        gbc.gridx = 0; gbc.gridy++;
-        addPanel.add(createStyledLabel("📊 Số lượng:"), gbc);
-        gbc.gridx = 1;
-        addPanel.add(txtQuantity, gbc);
-
-        gbc.gridx = 0; gbc.gridy++;
-        addPanel.add(createStyledLabel("🏷️ Thể loại:"), gbc);
-        gbc.gridx = 1;
-        addPanel.add(cbCategory, gbc);
-
-        gbc.gridx = 0; gbc.gridy++;
-        addPanel.add(createStyledLabel("📝 Mô tả sách:"), gbc);
-        gbc.gridx = 1;
-        addPanel.add(scrollDescription, gbc);
-
-        gbc.gridx = 0; gbc.gridy++;
-        addPanel.add(createStyledLabel("🖼️ URL ảnh bìa:"), gbc);
-        gbc.gridx = 1;
-        addPanel.add(urlPanel, gbc);
-
-        gbc.gridx = 0; gbc.gridy++;
-        gbc.gridwidth = 2;
-        addPanel.add(btnPanel, gbc);
-
-        // Ảnh bìa ở bên phải, chiếm nhiều dòng (tăng thêm 1 dòng cho mô tả)
-        gbc.gridx = 2; gbc.gridy = 1; gbc.gridheight = 9;
-        gbc.anchor = GridBagConstraints.CENTER;
-        gbc.insets = new Insets(10, 30, 10, 10);
-        addPanel.add(previewPanel, gbc);
-
-        // Sự kiện nút
+        btnAddBook.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnAddBook.addActionListener(e -> addBook());
+        
+        JButton btnBack = new JButton("Quay lại");
+        btnBack.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnBack.setBackground(new Color(108, 117, 125));
+        btnBack.setForeground(Color.WHITE);
+        btnBack.setBorder(BorderFactory.createEmptyBorder(12, 24, 12, 24));
+        btnBack.setFocusPainted(false);
+        btnBack.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnBack.addActionListener(e -> cardLayout.show(mainPanel, "LIST"));
-
-        return addPanel;
+        
+        buttonPanel.add(btnAddBook);
+        buttonPanel.add(btnBack);
+        
+        return buttonPanel;
     }
 
     private void previewImage() {
@@ -343,11 +454,11 @@ public class BookManagerUI extends JFrame {
                 previewLabel.setText("");
             } catch (Exception ex) {
                 previewLabel.setIcon(null);
-                previewLabel.setText("❌ Không thể tải ảnh");
+                previewLabel.setText("Không thể tải ảnh");
             }
         } else {
             previewLabel.setIcon(null);
-            previewLabel.setText("🖼️ Xem trước ảnh bìa");
+            previewLabel.setText("Xem trước ảnh bìa");
         }
     }
     
@@ -370,6 +481,28 @@ public class BookManagerUI extends JFrame {
         JLabel label = new JLabel(text);
         label.setFont(new Font("Segoe UI", Font.BOLD, 14));
         label.setForeground(new Color(55, 71, 79));
+        return label;
+    }
+    
+    private JTextField createModernTextField(String text, int columns) {
+        JTextField field = new JTextField(text, columns);
+        field.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        field.setBackground(Color.WHITE);
+        field.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(206, 212, 218)),
+            BorderFactory.createEmptyBorder(10, 15, 10, 15)
+        ));
+        field.setPreferredSize(new Dimension(320, 42));
+        field.setMinimumSize(new Dimension(320, 42));
+        field.setMaximumSize(new Dimension(320, 42));
+        return field;
+    }
+    
+    private JLabel createFormLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        label.setForeground(new Color(52, 58, 64));
+        label.setPreferredSize(new Dimension(130, 25));
         return label;
     }
 
@@ -489,103 +622,142 @@ public class BookManagerUI extends JFrame {
             ex.printStackTrace();
         }
         
-        // Tạo dialog sửa sách với giao diện đẹp và kích thước phù hợp
-        JDialog editDialog = new JDialog(this, "✏️ Sửa thông tin sách", true);
-        editDialog.setSize(750, 700);
+        // Tạo dialog sửa sách với giao diện đẹp và chuyên nghiệp
+        JDialog editDialog = new JDialog(this, "Chỉnh sửa thông tin sách", true);
+        editDialog.setSize(900, 750);
         editDialog.setLocationRelativeTo(this);
         editDialog.setResizable(false);
         
-        // Panel chính với gradient background
+        // Panel chính với gradient background chuyên nghiệp
         JPanel mainPanel = new JPanel(new BorderLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-                GradientPaint gradient = new GradientPaint(0, 0, new Color(240, 248, 255), 0, getHeight(), new Color(230, 240, 250));
+                
+                GradientPaint gradient = new GradientPaint(
+                    0, 0, new Color(248, 250, 252),
+                    0, getHeight(), new Color(238, 242, 247)
+                );
                 g2d.setPaint(gradient);
                 g2d.fillRect(0, 0, getWidth(), getHeight());
             }
         };
         
-        // Title panel
-        JPanel titlePanel = new JPanel();
-        titlePanel.setOpaque(false);
-        titlePanel.setBorder(BorderFactory.createEmptyBorder(15, 20, 10, 20));
-        JLabel titleLabel = new JLabel("📚 Chỉnh sửa thông tin sách");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        titleLabel.setForeground(new Color(25, 118, 210));
-        titlePanel.add(titleLabel);
+        // Header panel với thiết kế chuyên nghiệp
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setOpaque(false);
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(20, 25, 15, 25));
         
-        // Content panel với form
-        JPanel contentPanel = new JPanel(new GridBagLayout());
+        // Title section
+        JPanel titleSection = new JPanel();
+        titleSection.setLayout(new BoxLayout(titleSection, BoxLayout.Y_AXIS));
+        titleSection.setOpaque(false);
+        
+        JLabel titleLabel = new JLabel("Chỉnh sửa thông tin sách");
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        titleLabel.setForeground(new Color(31, 81, 135));
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        JLabel subtitleLabel = new JLabel("Cập nhật thông tin chi tiết cho sách trong thư viện");
+        subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        subtitleLabel.setForeground(new Color(108, 117, 125));
+        subtitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        titleSection.add(titleLabel);
+        titleSection.add(Box.createVerticalStrut(5));
+        titleSection.add(subtitleLabel);
+        
+        headerPanel.add(titleSection, BorderLayout.CENTER);
+        
+        // Content panel với layout chuyên nghiệp
+        JPanel contentPanel = new JPanel(new BorderLayout(25, 0));
         contentPanel.setOpaque(false);
-        contentPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 20, 20));
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(0, 25, 20, 25));
+        
+        // Form panel bên trái
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setOpaque(false);
+        formPanel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(new Color(31, 81, 135), 1, true),
+            "Thông tin chi tiết",
+            javax.swing.border.TitledBorder.LEFT,
+            javax.swing.border.TitledBorder.TOP,
+            new Font("Segoe UI", Font.PLAIN, 14),
+            new Color(31, 81, 135)
+        ));
+        
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 8, 8, 8);
+        gbc.insets = new Insets(12, 12, 12, 12);
         gbc.anchor = GridBagConstraints.WEST;
         
-        // Tạo các text fields với style đẹp
-        JTextField editTitle = createStyledTextField(title, 22);
-        JTextField editAuthor = createStyledTextField(author, 22);
-        JTextField editPublisher = createStyledTextField(publisher, 22);
-        JTextField editYear = createStyledTextField(year, 22);
-        JTextField editQuantity = createStyledTextField(String.valueOf(quantity), 22);
+        // Tạo các text fields với style chuyên nghiệp
+        JTextField editTitle = createModernTextField(title, 25);
+        JTextField editAuthor = createModernTextField(author, 25);
+        JTextField editPublisher = createModernTextField(publisher, 25);
+        JTextField editYear = createModernTextField(year, 25);
+        JTextField editQuantity = createModernTextField(String.valueOf(quantity), 25);
         
         JComboBox<String> editCategory = new JComboBox<>(CATEGORIES);
         editCategory.setSelectedItem(category);
         editCategory.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         editCategory.setBackground(Color.WHITE);
         editCategory.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(220, 220, 220), 1),
-            BorderFactory.createEmptyBorder(5, 10, 5, 10)
+            BorderFactory.createLineBorder(new Color(206, 212, 218)),
+            BorderFactory.createEmptyBorder(8, 15, 8, 15)
         ));
-        // Đặt kích thước giống với textfield
-        editCategory.setPreferredSize(new Dimension(280, 40));
-        editCategory.setMinimumSize(new Dimension(280, 40));
-        editCategory.setMaximumSize(new Dimension(280, 40));
+        editCategory.setPreferredSize(new Dimension(320, 42));
+        editCategory.setMinimumSize(new Dimension(320, 42));
+        editCategory.setMaximumSize(new Dimension(320, 42));
         
-        // Thêm trường mô tả sách
-        JTextArea editDescription = new JTextArea(currentDescription, 3, 18);
+        // Trường mô tả sách với thiết kế chuyên nghiệp
+        JTextArea editDescription = new JTextArea(currentDescription, 4, 25);
         editDescription.setBackground(Color.WHITE);
         editDescription.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         editDescription.setLineWrap(true);
         editDescription.setWrapStyleWord(true);
-        editDescription.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
+        editDescription.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(206, 212, 218)),
+            BorderFactory.createEmptyBorder(10, 15, 10, 15)
+        ));
         JScrollPane editScrollDescription = new JScrollPane(editDescription);
         editScrollDescription.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        editScrollDescription.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220), 1));
-        editScrollDescription.setPreferredSize(new Dimension(280, 80));
-        editScrollDescription.setMinimumSize(new Dimension(280, 80));
-        editScrollDescription.setMaximumSize(new Dimension(280, 80));
+        editScrollDescription.setBorder(BorderFactory.createLineBorder(new Color(206, 212, 218), 1));
+        editScrollDescription.setPreferredSize(new Dimension(320, 100));
+        editScrollDescription.setMinimumSize(new Dimension(320, 100));
+        editScrollDescription.setMaximumSize(new Dimension(320, 100));
         
-        // Thêm trường ảnh bìa với style đẹp
-        JTextField editImageUrl = createStyledTextField(currentImageUrl, 22);
+        // Trường ảnh bìa với thiết kế chuyên nghiệp
+        JTextField editImageUrl = createModernTextField(currentImageUrl, 25);
         
-        // Preview ảnh với border đẹp và shadow effect
-        JLabel editImagePreview = new JLabel("🖼️ Xem trước ảnh bìa");
-        editImagePreview.setPreferredSize(new Dimension(180, 240));
+        // Preview ảnh với thiết kế chuyên nghiệp
+        JLabel editImagePreview = new JLabel("Xem trước ảnh bìa", SwingConstants.CENTER);
+        editImagePreview.setPreferredSize(new Dimension(200, 280));
         editImagePreview.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(200, 220, 240), 2),
-            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+            BorderFactory.createLineBorder(new Color(31, 81, 135), 2, true),
+            BorderFactory.createEmptyBorder(15, 15, 15, 15)
         ));
         editImagePreview.setHorizontalAlignment(SwingConstants.CENTER);
+        editImagePreview.setVerticalAlignment(SwingConstants.CENTER);
         editImagePreview.setBackground(Color.WHITE);
         editImagePreview.setOpaque(true);
+        editImagePreview.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        editImagePreview.setForeground(new Color(108, 117, 125));
         
         // Load ảnh hiện tại nếu có
         if (!currentImageUrl.isEmpty()) {
             loadImagePreview(currentImageUrl, editImagePreview);
         }
         
-        JButton editPreviewBtn = new JButton("👁️ Xem trước ảnh");
-        editPreviewBtn.setBackground(new Color(103, 58, 183));
+        JButton editPreviewBtn = new JButton("Xem trước ảnh");
+        editPreviewBtn.setBackground(new Color(31, 81, 135));
         editPreviewBtn.setForeground(Color.WHITE);
-        editPreviewBtn.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        editPreviewBtn.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
+        editPreviewBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        editPreviewBtn.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
         editPreviewBtn.setFocusPainted(false);
-        editPreviewBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        editPreviewBtn.setPreferredSize(new Dimension(140, 35));
+        editPreviewBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        editPreviewBtn.setPreferredSize(new Dimension(150, 40));
         editPreviewBtn.addActionListener(e -> {
             String url = editImageUrl.getText().trim();
             if (!url.isEmpty()) {
@@ -593,85 +765,89 @@ public class BookManagerUI extends JFrame {
             }
         });
         
-        // Layout form với labels đẹp
+        // Layout form với thiết kế chuyên nghiệp
         gbc.gridx = 0; gbc.gridy = 0;
-        contentPanel.add(createStyledLabel("📖 Tên sách:"), gbc);
+        formPanel.add(createFormLabel("Tên sách:"), gbc);
         gbc.gridx = 1;
-        contentPanel.add(editTitle, gbc);
+        formPanel.add(editTitle, gbc);
         
         gbc.gridx = 0; gbc.gridy++;
-        contentPanel.add(createStyledLabel("✍️ Tác giả:"), gbc);
+        formPanel.add(createFormLabel("Tác giả:"), gbc);
         gbc.gridx = 1;
-        contentPanel.add(editAuthor, gbc);
+        formPanel.add(editAuthor, gbc);
         
         gbc.gridx = 0; gbc.gridy++;
-        contentPanel.add(createStyledLabel("🏢 Nhà XB:"), gbc);
+        formPanel.add(createFormLabel("Nhà xuất bản:"), gbc);
         gbc.gridx = 1;
-        contentPanel.add(editPublisher, gbc);
+        formPanel.add(editPublisher, gbc);
         
         gbc.gridx = 0; gbc.gridy++;
-        contentPanel.add(createStyledLabel("📅 Năm XB:"), gbc);
+        formPanel.add(createFormLabel("Năm xuất bản:"), gbc);
         gbc.gridx = 1;
-        contentPanel.add(editYear, gbc);
+        formPanel.add(editYear, gbc);
         
         gbc.gridx = 0; gbc.gridy++;
-        contentPanel.add(createStyledLabel("📊 Số lượng:"), gbc);
+        formPanel.add(createFormLabel("Số lượng:"), gbc);
         gbc.gridx = 1;
-        contentPanel.add(editQuantity, gbc);
+        formPanel.add(editQuantity, gbc);
         
         gbc.gridx = 0; gbc.gridy++;
-        contentPanel.add(createStyledLabel("🏷️ Thể loại:"), gbc);
+        formPanel.add(createFormLabel("Thể loại:"), gbc);
         gbc.gridx = 1;
-        contentPanel.add(editCategory, gbc);
+        formPanel.add(editCategory, gbc);
         
-        // Thêm trường mô tả sách
         gbc.gridx = 0; gbc.gridy++;
-        contentPanel.add(createStyledLabel("📝 Mô tả sách:"), gbc);
+        formPanel.add(createFormLabel("Mô tả sách:"), gbc);
         gbc.gridx = 1;
-        contentPanel.add(editScrollDescription, gbc);
+        formPanel.add(editScrollDescription, gbc);
         
-        // Thêm trường ảnh bìa
         gbc.gridx = 0; gbc.gridy++;
-        contentPanel.add(createStyledLabel("🖼️ Ảnh bìa URL:"), gbc);
+        formPanel.add(createFormLabel("URL ảnh bìa:"), gbc);
         gbc.gridx = 1;
-        contentPanel.add(editImageUrl, gbc);
+        formPanel.add(editImageUrl, gbc);
         
         gbc.gridx = 1; gbc.gridy++;
-        gbc.anchor = GridBagConstraints.WEST;
-        contentPanel.add(editPreviewBtn, gbc);
+        gbc.insets = new Insets(5, 12, 12, 12);
+        formPanel.add(editPreviewBtn, gbc);
         
-        // Thêm preview ảnh bên phải
-        gbc.gridx = 2; gbc.gridy = 0;
-        gbc.gridheight = 10;
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.insets = new Insets(8, 20, 8, 8);
-        contentPanel.add(editImagePreview, gbc);
+        // Image preview panel bên phải
+        JPanel imagePreviewPanel = new JPanel(new BorderLayout());
+        imagePreviewPanel.setOpaque(false);
+        imagePreviewPanel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(new Color(31, 81, 135), 1, true),
+            "Xem trước ảnh bìa",
+            javax.swing.border.TitledBorder.LEFT,
+            javax.swing.border.TitledBorder.TOP,
+            new Font("Segoe UI", Font.PLAIN, 14),
+            new Color(31, 81, 135)
+        ));
+        imagePreviewPanel.add(editImagePreview, BorderLayout.CENTER);
         
-        // Reset gridheight cho các component khác
-        gbc.gridheight = 1;
-        gbc.fill = GridBagConstraints.NONE;
-        gbc.insets = new Insets(8, 8, 8, 8);
+        contentPanel.add(formPanel, BorderLayout.CENTER);
+        contentPanel.add(imagePreviewPanel, BorderLayout.EAST);
         
-        // Button panel với style đẹp
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
+        // Button panel với thiết kế chuyên nghiệp
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
         buttonPanel.setOpaque(false);
-        buttonPanel.setBorder(BorderFactory.createEmptyBorder(20, 0, 10, 0));
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(25, 0, 15, 0));
         
-        JButton btnSave = new JButton("💾 Lưu thay đổi");
-        btnSave.setBackground(new Color(76, 175, 80));
+        JButton btnSave = new JButton("Lưu thay đổi");
+        btnSave.setBackground(new Color(40, 167, 69));
         btnSave.setForeground(Color.WHITE);
         btnSave.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        btnSave.setBorder(BorderFactory.createEmptyBorder(12, 25, 12, 25));
+        btnSave.setBorder(BorderFactory.createEmptyBorder(12, 30, 12, 30));
         btnSave.setFocusPainted(false);
-        btnSave.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnSave.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnSave.setPreferredSize(new Dimension(140, 45));
         
-        JButton btnCancel = new JButton("❌ Hủy bỏ");
-        btnCancel.setBackground(new Color(244, 67, 54));
+        JButton btnCancel = new JButton("Hủy bỏ");
+        btnCancel.setBackground(new Color(220, 53, 69));
         btnCancel.setForeground(Color.WHITE);
         btnCancel.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        btnCancel.setBorder(BorderFactory.createEmptyBorder(12, 25, 12, 25));
+        btnCancel.setBorder(BorderFactory.createEmptyBorder(12, 30, 12, 30));
         btnCancel.setFocusPainted(false);
-        btnCancel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnCancel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnCancel.setPreferredSize(new Dimension(140, 45));
         
         btnSave.addActionListener(e -> {
             try (Connection conn = getConn()) {
@@ -688,11 +864,11 @@ public class BookManagerUI extends JFrame {
                 ps.setInt(9, bookId);
                 
                 ps.executeUpdate();
-                JOptionPane.showMessageDialog(editDialog, "✅ Cập nhật sách thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(editDialog, "Cập nhật sách thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
                 loadBooks();
                 editDialog.dispose();
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(editDialog, "❌ Lỗi cập nhật: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(editDialog, "Lỗi cập nhật: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
         });
         
@@ -701,8 +877,8 @@ public class BookManagerUI extends JFrame {
         buttonPanel.add(btnSave);
         buttonPanel.add(btnCancel);
         
-        // Lắp ráp dialog
-        mainPanel.add(titlePanel, BorderLayout.NORTH);
+        // Lắp ráp dialog với thiết kế chuyên nghiệp
+        mainPanel.add(headerPanel, BorderLayout.NORTH);
         mainPanel.add(contentPanel, BorderLayout.CENTER);
         mainPanel.add(buttonPanel, BorderLayout.SOUTH);
         

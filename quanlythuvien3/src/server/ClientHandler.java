@@ -8,6 +8,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 
 import dao.UserDAO;
@@ -105,14 +106,30 @@ public class ClientHandler extends Thread {
         }
 
         try (Connection conn = getConnection()) {
+            // Add status column if it doesn't exist
+            try {
+                Statement stmt = conn.createStatement();
+                stmt.execute("ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'active'");
+            } catch (SQLException e) {
+                // Column already exists, ignore
+            }
+            
             PreparedStatement ps = conn.prepareStatement(
-                "SELECT id, role FROM users WHERE username=? AND password=?");
+                "SELECT id, role, status FROM users WHERE username=? AND password=?");
             ps.setString(1, username);
             ps.setString(2, password);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 int id = rs.getInt("id");
                 String role = rs.getString("role");
+                String status = rs.getString("status");
+                
+                // Check if account is locked
+                if ("locked".equals(status)) {
+                    out.println("LOGIN_FAIL|ACCOUNT_LOCKED|Tài khoản của bạn đã bị khóa, vui lòng đến thư viện hoặc liên hệ số 1900 2004 để biết chi tiết");
+                    return;
+                }
+                
                 out.println("LOGIN_SUCCESS|" + id + "|" + role);
             } else {
                 out.println("LOGIN_FAIL|Invalid credentials");
