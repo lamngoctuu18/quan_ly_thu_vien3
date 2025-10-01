@@ -9,7 +9,7 @@ import java.awt.event.*;
 import java.sql.*;
 
 public class UserManagerUI extends JFrame {
-    private JTextField txtPhone, txtLimit;
+    private JTextField txtPhone;
     private JButton btnSearch, btnBack;
     private JTable userTable;
     private DefaultTableModel userModel;
@@ -89,20 +89,9 @@ public class UserManagerUI extends JFrame {
         lblPhone.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         lblPhone.setForeground(new Color(52, 58, 64));
         
-        txtPhone = new JTextField(15);
+        txtPhone = new JTextField(20);
         txtPhone.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         txtPhone.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(206, 212, 218)),
-            BorderFactory.createEmptyBorder(8, 12, 8, 12)
-        ));
-        
-        JLabel lblLimit = new JLabel("Hạn:");
-        lblLimit.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        lblLimit.setForeground(new Color(52, 58, 64));
-        
-        txtLimit = new JTextField(8);
-        txtLimit.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        txtLimit.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(206, 212, 218)),
             BorderFactory.createEmptyBorder(8, 12, 8, 12)
         ));
@@ -117,8 +106,6 @@ public class UserManagerUI extends JFrame {
         
         controlsPanel.add(lblPhone);
         controlsPanel.add(txtPhone);
-        controlsPanel.add(lblLimit);
-        controlsPanel.add(txtLimit);
         controlsPanel.add(btnSearch);
         
         // Table panel
@@ -231,15 +218,12 @@ public class UserManagerUI extends JFrame {
     private void loadUsers() {
         userModel.setRowCount(0);
         String phone = txtPhone.getText().trim();
-        String limit = txtLimit.getText().trim();
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:C:/data/library.db")) {
             String sql = "SELECT id, username, phone, email, created_at FROM users WHERE role != 'admin'";
             if (!phone.isEmpty()) sql += " AND phone LIKE ?";
-            if (!limit.isEmpty()) sql += " AND id <= ?";
             PreparedStatement ps = conn.prepareStatement(sql);
             int idx = 1;
             if (!phone.isEmpty()) ps.setString(idx++, "%" + phone + "%");
-            if (!limit.isEmpty()) ps.setString(idx++, limit);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
                 int userId = rs.getInt("id");
@@ -284,7 +268,6 @@ public class UserManagerUI extends JFrame {
     private void refreshData() {
         // Clear search fields
         txtPhone.setText("");
-        txtLimit.setText("");
         
         // Reload all users
         loadUsers();

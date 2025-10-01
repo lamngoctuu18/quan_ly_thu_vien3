@@ -16,62 +16,68 @@ public class DarkModeManager {
     private List<DarkModeListener> listeners = new ArrayList<>();
     private Preferences prefs;
     
-    // Dark Mode Color Palette
+    // Dark Mode Color Palette - Modern và đẹp mắt
     public static class DarkTheme {
-        // Background colors
-        public static final Color PRIMARY_BG = new Color(18, 18, 18);           // Main background
-        public static final Color SECONDARY_BG = new Color(33, 37, 41);        // Secondary background
-        public static final Color TERTIARY_BG = new Color(52, 58, 64);         // Cards, panels
-        public static final Color SURFACE_BG = new Color(73, 80, 87);          // Elevated surfaces
+        // Background colors - Gradient tối hiện đại
+        public static final Color PRIMARY_BG = new Color(15, 17, 21);          // Nền chính tối đẹp
+        public static final Color SECONDARY_BG = new Color(24, 28, 34);        // Nền phụ
+        public static final Color TERTIARY_BG = new Color(34, 40, 49);         // Cards, panels
+        public static final Color SURFACE_BG = new Color(44, 51, 61);          // Elevated surfaces
+        public static final Color CARD_BG = new Color(28, 33, 40);             // Card background
         
-        // Text colors
-        public static final Color PRIMARY_TEXT = new Color(248, 249, 250);     // Primary text
-        public static final Color SECONDARY_TEXT = new Color(206, 212, 218);   // Secondary text
-        public static final Color MUTED_TEXT = new Color(173, 181, 189);       // Muted text
+        // Text colors - Contrast cao, dễ đọc
+        public static final Color PRIMARY_TEXT = new Color(251, 252, 253);     // Text chính
+        public static final Color SECONDARY_TEXT = new Color(195, 202, 210);   // Text phụ  
+        public static final Color MUTED_TEXT = new Color(158, 168, 179);       // Text mờ
         
-        // Accent colors
-        public static final Color PRIMARY_ACCENT = new Color(13, 110, 253);    // Primary blue
-        public static final Color SUCCESS_ACCENT = new Color(25, 135, 84);     // Success green
-        public static final Color WARNING_ACCENT = new Color(255, 193, 7);     // Warning yellow
-        public static final Color DANGER_ACCENT = new Color(220, 53, 69);      // Danger red
-        public static final Color INFO_ACCENT = new Color(13, 202, 240);       // Info cyan
+        // Accent colors - Màu sắc sinh động
+        public static final Color PRIMARY_ACCENT = new Color(88, 166, 255);    // Blue chủ đạo
+        public static final Color SUCCESS_ACCENT = new Color(64, 186, 106);    // Green thành công
+        public static final Color WARNING_ACCENT = new Color(255, 183, 77);    // Yellow cảnh báo
+        public static final Color DANGER_ACCENT = new Color(255, 107, 107);    // Red nguy hiểm
+        public static final Color INFO_ACCENT = new Color(84, 199, 236);       // Cyan thông tin
         
-        // Border colors
-        public static final Color BORDER_COLOR = new Color(73, 80, 87);        // Default border
-        public static final Color FOCUS_BORDER = new Color(13, 110, 253);      // Focus border
+        // Border colors - Viền tinh tế
+        public static final Color BORDER_COLOR = new Color(54, 63, 77);        // Viền mặc định
+        public static final Color FOCUS_BORDER = new Color(88, 166, 255);      // Viền focus
+        public static final Color HOVER_BORDER = new Color(74, 144, 226);      // Viền hover
         
-        // Hover states
-        public static final Color HOVER_BG = new Color(73, 80, 87);            // Hover background
-        public static final Color SELECTED_BG = new Color(13, 110, 253, 30);   // Selected background
+        // Hover states - Hiệu ứng hover mượt
+        public static final Color HOVER_BG = new Color(54, 63, 77);            // Nền hover
+        public static final Color SELECTED_BG = new Color(88, 166, 255, 25);   // Nền selected
+        public static final Color ACTIVE_BG = new Color(88, 166, 255, 40);     // Nền active
     }
     
-    // Light Mode Color Palette
+    // Light Mode Color Palette - Sáng và tinh tế
     public static class LightTheme {
         // Background colors
-        public static final Color PRIMARY_BG = new Color(255, 255, 255);       // Main background
-        public static final Color SECONDARY_BG = new Color(248, 249, 250);     // Secondary background
-        public static final Color TERTIARY_BG = new Color(233, 236, 239);      // Cards, panels
+        public static final Color PRIMARY_BG = new Color(255, 255, 255);       // Nền chính trắng
+        public static final Color SECONDARY_BG = new Color(248, 250, 252);     // Nền phụ
+        public static final Color TERTIARY_BG = new Color(241, 245, 249);      // Cards, panels
         public static final Color SURFACE_BG = new Color(255, 255, 255);       // Elevated surfaces
+        public static final Color CARD_BG = new Color(251, 252, 253);          // Card background
         
         // Text colors
-        public static final Color PRIMARY_TEXT = new Color(33, 37, 41);        // Primary text
-        public static final Color SECONDARY_TEXT = new Color(108, 117, 125);   // Secondary text
-        public static final Color MUTED_TEXT = new Color(134, 142, 150);       // Muted text
+        public static final Color PRIMARY_TEXT = new Color(15, 23, 42);        // Text chính
+        public static final Color SECONDARY_TEXT = new Color(71, 85, 105);     // Text phụ
+        public static final Color MUTED_TEXT = new Color(100, 116, 139);       // Text mờ
         
-        // Accent colors
-        public static final Color PRIMARY_ACCENT = new Color(13, 110, 253);    // Primary blue
-        public static final Color SUCCESS_ACCENT = new Color(25, 135, 84);     // Success green
-        public static final Color WARNING_ACCENT = new Color(255, 193, 7);     // Warning yellow
-        public static final Color DANGER_ACCENT = new Color(220, 53, 69);      // Danger red
-        public static final Color INFO_ACCENT = new Color(13, 202, 240);       // Info cyan
+        // Accent colors - Giữ nguyên màu đẹp
+        public static final Color PRIMARY_ACCENT = new Color(59, 130, 246);    // Blue chủ đạo
+        public static final Color SUCCESS_ACCENT = new Color(34, 197, 94);     // Green thành công
+        public static final Color WARNING_ACCENT = new Color(251, 191, 36);    // Yellow cảnh báo
+        public static final Color DANGER_ACCENT = new Color(239, 68, 68);      // Red nguy hiểm
+        public static final Color INFO_ACCENT = new Color(14, 165, 233);       // Cyan thông tin
         
         // Border colors
-        public static final Color BORDER_COLOR = new Color(206, 212, 218);     // Default border
-        public static final Color FOCUS_BORDER = new Color(13, 110, 253);      // Focus border
+        public static final Color BORDER_COLOR = new Color(226, 232, 240);     // Viền mặc định
+        public static final Color FOCUS_BORDER = new Color(59, 130, 246);      // Viền focus
+        public static final Color HOVER_BORDER = new Color(37, 99, 235);       // Viền hover
         
         // Hover states
-        public static final Color HOVER_BG = new Color(248, 249, 250);         // Hover background
-        public static final Color SELECTED_BG = new Color(13, 110, 253, 30);   // Selected background
+        public static final Color HOVER_BG = new Color(248, 250, 252);         // Nền hover
+        public static final Color SELECTED_BG = new Color(59, 130, 246, 20);   // Nền selected
+        public static final Color ACTIVE_BG = new Color(59, 130, 246, 35);     // Nền active
     }
     
     private DarkModeManager() {
@@ -245,53 +251,184 @@ public class DarkModeManager {
     }
     
     /**
-     * Apply dark theme to component
+     * Apply dark theme to component - Thông minh hơn, giữ màu đặc trưng
      */
     private void applyDarkTheme(JComponent component) {
-        component.setBackground(DarkTheme.PRIMARY_BG);
-        component.setForeground(DarkTheme.PRIMARY_TEXT);
-        
         if (component instanceof JPanel) {
+            // Panels - nền tối hiện đại
             component.setBackground(DarkTheme.SECONDARY_BG);
         } else if (component instanceof JButton) {
-            component.setBackground(DarkTheme.TERTIARY_BG);
-            component.setForeground(DarkTheme.PRIMARY_TEXT);
+            JButton button = (JButton) component;
+            // Chỉ cập nhật nút nếu chúng có màu mặc định hoặc không đặc biệt
+            Color currentBg = button.getBackground();
+            
+            // Kiểm tra xem có phải nút đặc biệt không (có màu riêng)
+            if (isSpecialColoredButton(currentBg)) {
+                // Nút có màu đặc biệt - chỉ điều chỉnh cho Dark Mode
+                adjustButtonForDarkMode(button, currentBg);
+            } else {
+                // Nút bình thường - áp dụng theme mặc định
+                button.setBackground(DarkTheme.TERTIARY_BG);
+                button.setForeground(DarkTheme.PRIMARY_TEXT);
+                button.setBorder(BorderFactory.createLineBorder(DarkTheme.BORDER_COLOR, 1));
+            }
         } else if (component instanceof JTextField || component instanceof JTextArea) {
             component.setBackground(DarkTheme.SURFACE_BG);
             component.setForeground(DarkTheme.PRIMARY_TEXT);
-            component.setBorder(BorderFactory.createLineBorder(DarkTheme.BORDER_COLOR));
+            component.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(DarkTheme.BORDER_COLOR, 1),
+                BorderFactory.createEmptyBorder(4, 8, 4, 8)
+            ));
         } else if (component instanceof JLabel) {
             component.setForeground(DarkTheme.PRIMARY_TEXT);
         } else if (component instanceof JTable) {
-            component.setBackground(DarkTheme.SECONDARY_BG);
+            component.setBackground(DarkTheme.CARD_BG);
             component.setForeground(DarkTheme.PRIMARY_TEXT);
             ((JTable) component).setGridColor(DarkTheme.BORDER_COLOR);
+            // Header của table
+            if (((JTable) component).getTableHeader() != null) {
+                ((JTable) component).getTableHeader().setBackground(DarkTheme.TERTIARY_BG);
+                ((JTable) component).getTableHeader().setForeground(DarkTheme.PRIMARY_TEXT);
+            }
+        } else if (component instanceof JComboBox) {
+            component.setBackground(DarkTheme.SURFACE_BG);
+            component.setForeground(DarkTheme.PRIMARY_TEXT);
+        } else {
+            // Component khác
+            component.setBackground(DarkTheme.PRIMARY_BG);
+            component.setForeground(DarkTheme.PRIMARY_TEXT);
         }
     }
     
     /**
-     * Apply light theme to component
+     * Apply light theme to component - Thông minh hơn, giữ màu đặc trưng
      */
     private void applyLightTheme(JComponent component) {
-        component.setBackground(LightTheme.PRIMARY_BG);
-        component.setForeground(LightTheme.PRIMARY_TEXT);
-        
         if (component instanceof JPanel) {
+            // Panels - nền sáng tinh tế
             component.setBackground(LightTheme.SECONDARY_BG);
         } else if (component instanceof JButton) {
-            component.setBackground(LightTheme.TERTIARY_BG);
-            component.setForeground(LightTheme.PRIMARY_TEXT);
+            JButton button = (JButton) component;
+            // Chỉ cập nhật nút nếu chúng có màu mặc định hoặc không đặc biệt
+            Color currentBg = button.getBackground();
+            
+            // Kiểm tra xem có phải nút đặc biệt không (có màu riêng)
+            if (isSpecialColoredButton(currentBg)) {
+                // Nút có màu đặc biệt - khôi phục màu gốc
+                restoreButtonOriginalColors(button, currentBg);
+            } else {
+                // Nút bình thường - áp dụng theme mặc định
+                button.setBackground(LightTheme.TERTIARY_BG);
+                button.setForeground(LightTheme.PRIMARY_TEXT);
+                button.setBorder(BorderFactory.createLineBorder(LightTheme.BORDER_COLOR, 1));
+            }
         } else if (component instanceof JTextField || component instanceof JTextArea) {
             component.setBackground(LightTheme.SURFACE_BG);
             component.setForeground(LightTheme.PRIMARY_TEXT);
-            component.setBorder(BorderFactory.createLineBorder(LightTheme.BORDER_COLOR));
+            component.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(LightTheme.BORDER_COLOR, 1),
+                BorderFactory.createEmptyBorder(4, 8, 4, 8)
+            ));
         } else if (component instanceof JLabel) {
             component.setForeground(LightTheme.PRIMARY_TEXT);
         } else if (component instanceof JTable) {
-            component.setBackground(LightTheme.SECONDARY_BG);
+            component.setBackground(LightTheme.CARD_BG);
             component.setForeground(LightTheme.PRIMARY_TEXT);
             ((JTable) component).setGridColor(LightTheme.BORDER_COLOR);
+            // Header của table
+            if (((JTable) component).getTableHeader() != null) {
+                ((JTable) component).getTableHeader().setBackground(LightTheme.TERTIARY_BG);
+                ((JTable) component).getTableHeader().setForeground(LightTheme.PRIMARY_TEXT);
+            }
+        } else if (component instanceof JComboBox) {
+            component.setBackground(LightTheme.SURFACE_BG);
+            component.setForeground(LightTheme.PRIMARY_TEXT);
+        } else {
+            // Component khác
+            component.setBackground(LightTheme.PRIMARY_BG);
+            component.setForeground(LightTheme.PRIMARY_TEXT);
         }
+    }
+    
+    /**
+     * Kiểm tra xem nút có màu đặc biệt không
+     */
+    private boolean isSpecialColoredButton(Color currentColor) {
+        if (currentColor == null) return false;
+        
+        // Các màu mặc định của Swing - không coi là đặc biệt
+        if (currentColor.equals(UIManager.getColor("Button.background")) ||
+            currentColor.equals(new Color(238, 238, 238)) ||
+            currentColor.equals(new Color(240, 240, 240)) ||
+            currentColor.equals(Color.LIGHT_GRAY) ||
+            currentColor.equals(Color.WHITE)) {
+            return false;
+        }
+        
+        // Nút có màu đặc biệt (không phải xám/trắng mặc định)
+        return true;
+    }
+    
+    /**
+     * Điều chỉnh nút có màu đặc biệt cho Dark Mode
+     */
+    private void adjustButtonForDarkMode(JButton button, Color originalColor) {
+        // Làm tối màu nền một chút để phù hợp với Dark Mode
+        Color adjustedColor = darkenColor(originalColor, 0.3f);
+        button.setBackground(adjustedColor);
+        
+        // Text màu trắng cho dễ đọc
+        button.setForeground(DarkTheme.PRIMARY_TEXT);
+        
+        // Border tối hơn
+        Color borderColor = darkenColor(originalColor, 0.5f);
+        button.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(borderColor, 1),
+            BorderFactory.createEmptyBorder(8, 12, 8, 12)
+        ));
+    }
+    
+    /**
+     * Khôi phục màu gốc của nút cho Light Mode
+     */
+    private void restoreButtonOriginalColors(JButton button, Color currentColor) {
+        // Khôi phục màu sáng hơn
+        Color restoredColor = lightenColor(currentColor, 0.2f);
+        button.setBackground(restoredColor);
+        
+        // Text màu trắng để contrast
+        button.setForeground(Color.WHITE);
+        
+        // Border sáng hơn
+        Color borderColor = lightenColor(restoredColor, 0.1f);
+        button.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(borderColor, 1),
+            BorderFactory.createEmptyBorder(8, 12, 8, 12)
+        ));
+    }
+    
+    /**
+     * Làm tối màu theo tỷ lệ
+     */
+    private Color darkenColor(Color color, float factor) {
+        return new Color(
+            Math.max(0, (int) (color.getRed() * (1 - factor))),
+            Math.max(0, (int) (color.getGreen() * (1 - factor))),
+            Math.max(0, (int) (color.getBlue() * (1 - factor))),
+            color.getAlpha()
+        );
+    }
+    
+    /**
+     * Làm sáng màu theo tỷ lệ
+     */
+    private Color lightenColor(Color color, float factor) {
+        return new Color(
+            Math.min(255, (int) (color.getRed() + (255 - color.getRed()) * factor)),
+            Math.min(255, (int) (color.getGreen() + (255 - color.getGreen()) * factor)),
+            Math.min(255, (int) (color.getBlue() + (255 - color.getBlue()) * factor)),
+            color.getAlpha()
+        );
     }
     
     /**

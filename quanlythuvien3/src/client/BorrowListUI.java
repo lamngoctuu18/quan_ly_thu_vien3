@@ -3,9 +3,13 @@ package client;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.io.*;
 import java.net.Socket;
+import java.time.*;
+import java.time.format.DateTimeParseException;
 
 public class BorrowListUI extends JFrame {
     private int userId;
@@ -157,14 +161,112 @@ public class BorrowListUI extends JFrame {
         // Info cards panel
         JPanel infoPanel = new JPanel(new GridLayout(1, 3, 15, 0));
         infoPanel.setOpaque(false);
-        
+
+        // Compute overdue and near-due counts from the model (due date is column index 4)
+        int overdueCount = 0;
+        int nearDueCount = 0;
+        ZonedDateTime now = ZonedDateTime.now();
+        for (int r = 0; r < model.getRowCount(); r++) {
+            try {
+                Object dueObj = model.getValueAt(r, 4);
+                if (dueObj != null) {
+                    String dueStr = dueObj.toString().trim();
+                    if (!dueStr.isEmpty()) {
+                        ZonedDateTime dueDateTime;
+                        try {
+                            LocalDateTime ldt = LocalDateTime.parse(dueStr);
+                            dueDateTime = ldt.atZone(ZoneId.systemDefault());
+                        } catch (DateTimeParseException ex1) {
+                            try {
+                                LocalDate ld = LocalDate.parse(dueStr);
+                                dueDateTime = ld.atStartOfDay(ZoneId.systemDefault());
+                            } catch (DateTimeParseException ex2) {
+                                continue;
+                            }
+                        }
+
+                        Duration diff = Duration.between(now, dueDateTime);
+                        if (diff.isNegative()) {
+                            overdueCount++;
+                        } else if (diff.toHours() <= 24) {
+                            nearDueCount++;
+                        }
+                    }
+                }
+            } catch (Exception ignore) {
+                // ignore parse errors
+            }
+        }
+
         JPanel totalPanel = createBorrowInfoCard("Tổng số sách", String.valueOf(model.getRowCount()), new Color(220, 53, 69));
-        JPanel overduePanel = createBorrowInfoCard("Quá hạn", "0", new Color(255, 193, 7));
-        JPanel nearDuePanel = createBorrowInfoCard("Sắp hết hạn", "1", new Color(255, 108, 0));
-        
+        JPanel overduePanel = createBorrowInfoCard("Quá hạn", String.valueOf(overdueCount), new Color(255, 193, 7));
+        JPanel nearDuePanel = createBorrowInfoCard("Sắp hết hạn", String.valueOf(nearDueCount), new Color(255, 108, 0));
+
         infoPanel.add(totalPanel);
         infoPanel.add(overduePanel);
         infoPanel.add(nearDuePanel);
+
+        // Custom renderer to highlight rows whose due date is within 1 day or already overdue
+        class DueDateRowRenderer extends DefaultTableCellRenderer {
+            private final Color nearDueBg = new Color(255, 235, 235);
+            private final Color overdueBg = new Color(255, 220, 220);
+            private final Color nearDueFg = new Color(153, 0, 0);
+            private final Color overdueFg = new Color(102, 0, 0);
+
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                try {
+                    int modelRow = table.convertRowIndexToModel(row);
+                    Object dueObj = table.getModel().getValueAt(modelRow, 4);
+                    if (dueObj != null) {
+                        String dueStr = dueObj.toString().trim();
+                        if (!dueStr.isEmpty()) {
+                            ZonedDateTime nowZ = ZonedDateTime.now();
+                            ZonedDateTime dueDateTime;
+                            try {
+                                LocalDateTime ldt = LocalDateTime.parse(dueStr);
+                                dueDateTime = ldt.atZone(ZoneId.systemDefault());
+                            } catch (DateTimeParseException ex1) {
+                                try {
+                                    LocalDate ld = LocalDate.parse(dueStr);
+                                    dueDateTime = ld.atStartOfDay(ZoneId.systemDefault());
+                                } catch (DateTimeParseException ex2) {
+                                    return c;
+                                }
+                            }
+
+                            Duration diff = Duration.between(nowZ, dueDateTime);
+                            if (diff.isNegative()) {
+                                if (!isSelected) {
+                                    c.setBackground(overdueBg);
+                                    c.setForeground(overdueFg);
+                                }
+                            } else if (diff.toHours() <= 24) {
+                                if (!isSelected) {
+                                    c.setBackground(nearDueBg);
+                                    c.setForeground(nearDueFg);
+                                }
+                            } else {
+                                if (!isSelected) {
+                                    c.setBackground(Color.WHITE);
+                                    c.setForeground(new Color(33, 37, 41));
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception ex) {
+                    // ignore
+                }
+                return c;
+            }
+        }
+
+        // Apply renderer to all columns so full row highlights
+        TableCellRenderer dueRenderer = new DueDateRowRenderer();
+        for (int i = 0; i < table.getColumnCount(); i++) {
+            table.getColumnModel().getColumn(i).setCellRenderer(dueRenderer);
+        }
         
         // Button panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));

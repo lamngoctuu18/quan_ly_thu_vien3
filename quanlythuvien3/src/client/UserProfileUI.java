@@ -790,49 +790,94 @@ public class UserProfileUI extends JFrame {
     // Statistics methods
     private int getBorrowedBooksCount() {
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:C:/data/library.db?busy_timeout=30000")) {
-            String query = "SELECT COUNT(*) FROM borrows WHERE user_id = ? AND (return_date IS NULL OR return_date = '' OR return_date = 'null')";
+            // Count approved borrow requests that haven't been returned
+            String query = "SELECT COUNT(*) FROM borrow_requests br " +
+                          "LEFT JOIN borrows b ON br.user_id = b.user_id AND br.book_id = b.book_id " +
+                          "WHERE br.user_id = ? AND br.status = 'APPROVED' " +
+                          "AND (b.return_date IS NULL OR b.return_date = '' OR b.return_date = 'null')";
             PreparedStatement ps = conn.prepareStatement(query);
             ps.setInt(1, userId);
             ResultSet rs = ps.executeQuery();
             return rs.next() ? rs.getInt(1) : 0;
         } catch (Exception e) {
-            return 0;
+            // Fallback to old method if new tables don't exist
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:C:/data/library.db?busy_timeout=30000")) {
+                String query = "SELECT COUNT(*) FROM borrows WHERE user_id = ? AND (return_date IS NULL OR return_date = '' OR return_date = 'null')";
+                PreparedStatement ps = conn.prepareStatement(query);
+                ps.setInt(1, userId);
+                ResultSet rs = ps.executeQuery();
+                return rs.next() ? rs.getInt(1) : 0;
+            } catch (Exception ex) {
+                return 0;
+            }
         }
     }
     
     private int getFavoriteBooksCount() {
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:C:/data/library.db?busy_timeout=30000")) {
-            String query = "SELECT COUNT(*) FROM favorites WHERE user_id = ?";
+            // Count distinct favorite books that still exist in books table
+            String query = "SELECT COUNT(DISTINCT f.book_id) FROM favorites f " +
+                          "INNER JOIN books b ON f.book_id = b.id " +
+                          "WHERE f.user_id = ?";
             PreparedStatement ps = conn.prepareStatement(query);
             ps.setInt(1, userId);
             ResultSet rs = ps.executeQuery();
             return rs.next() ? rs.getInt(1) : 0;
         } catch (Exception e) {
-            return 0;
+            // Fallback to simple count if JOIN fails
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:C:/data/library.db?busy_timeout=30000")) {
+                String query = "SELECT COUNT(*) FROM favorites WHERE user_id = ?";
+                PreparedStatement ps = conn.prepareStatement(query);
+                ps.setInt(1, userId);
+                ResultSet rs = ps.executeQuery();
+                return rs.next() ? rs.getInt(1) : 0;
+            } catch (Exception ex) {
+                return 0;
+            }
         }
     }
     
     private int getTotalActivitiesCount() {
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:C:/data/library.db?busy_timeout=30000")) {
-            String query = "SELECT COUNT(*) FROM activities WHERE user_id = ?";
+            // Count all user activities (including borrow requests, favorites, etc.)
+            String query = "SELECT COUNT(*) FROM activities WHERE user_id = ? AND action_time IS NOT NULL";
             PreparedStatement ps = conn.prepareStatement(query);
             ps.setInt(1, userId);
             ResultSet rs = ps.executeQuery();
             return rs.next() ? rs.getInt(1) : 0;
         } catch (Exception e) {
-            return 0;
+            // Fallback to simple count
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:C:/data/library.db?busy_timeout=30000")) {
+                String query = "SELECT COUNT(*) FROM activities WHERE user_id = ?";
+                PreparedStatement ps = conn.prepareStatement(query);
+                ps.setInt(1, userId);
+                ResultSet rs = ps.executeQuery();
+                return rs.next() ? rs.getInt(1) : 0;
+            } catch (Exception ex) {
+                return 0;
+            }
         }
     }
     
     private int getPendingRequestsCount() {
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:C:/data/library.db?busy_timeout=30000")) {
-            String query = "SELECT COUNT(*) FROM borrow_requests WHERE user_id = ? AND status = 'PENDING'";
+            // Count pending borrow requests that are still active
+            String query = "SELECT COUNT(*) FROM borrow_requests WHERE user_id = ? AND status = 'PENDING' AND request_date IS NOT NULL";
             PreparedStatement ps = conn.prepareStatement(query);
             ps.setInt(1, userId);
             ResultSet rs = ps.executeQuery();
             return rs.next() ? rs.getInt(1) : 0;
         } catch (Exception e) {
-            return 0;
+            // Fallback to simple count
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:C:/data/library.db?busy_timeout=30000")) {
+                String query = "SELECT COUNT(*) FROM borrow_requests WHERE user_id = ? AND status = 'PENDING'";
+                PreparedStatement ps = conn.prepareStatement(query);
+                ps.setInt(1, userId);
+                ResultSet rs = ps.executeQuery();
+                return rs.next() ? rs.getInt(1) : 0;
+            } catch (Exception ex) {
+                return 0;
+            }
         }
     }
 }

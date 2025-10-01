@@ -414,7 +414,10 @@ public class ClientHandler extends Thread {
         int userId = Integer.parseInt(parts[1]);
         try (Connection conn = getConnection()) {
             PreparedStatement ps = conn.prepareStatement(
-                "SELECT b.title, b.author, br.borrow_date, datetime(br.borrow_date, '+30 days') as due_date FROM borrows br INNER JOIN books b ON br.book_id = b.id WHERE br.user_id = ? AND br.return_date IS NULL");
+                "SELECT b.title, b.author, br.borrow_date, " +
+                "COALESCE((SELECT rq.expected_return_date FROM borrow_requests rq " +
+                "WHERE rq.user_id = br.user_id AND rq.book_id = br.book_id ORDER BY rq.request_date DESC LIMIT 1), datetime(br.borrow_date, '+30 days')) as due_date " +
+                "FROM borrows br INNER JOIN books b ON br.book_id = b.id WHERE br.user_id = ? AND br.return_date IS NULL");
             ps.setInt(1, userId);
             ResultSet rs = ps.executeQuery();
             StringBuilder sb = new StringBuilder();

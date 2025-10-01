@@ -498,8 +498,8 @@ public class BorrowRequestManagerUI extends JPanel {
     
     private void createBorrowRecord(int requestId) {
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:C:/data/library.db?busy_timeout=30000")) {
-            // Get request details
-            String getRequestQuery = "SELECT user_id, book_id FROM borrow_requests WHERE id = ?";
+            // Get request details including expected_return_date
+            String getRequestQuery = "SELECT user_id, book_id, expected_return_date FROM borrow_requests WHERE id = ?";
             PreparedStatement ps1 = conn.prepareStatement(getRequestQuery);
             ps1.setInt(1, requestId);
             ResultSet rs = ps1.executeQuery();
@@ -507,15 +507,24 @@ public class BorrowRequestManagerUI extends JPanel {
             if (rs.next()) {
                 int userId = rs.getInt("user_id");
                 int bookId = rs.getInt("book_id");
+                String expectedReturnDate = rs.getString("expected_return_date");
                 
-                // Create actual borrow record (only use columns that exist in borrows table)
-                String insertBorrowQuery = "INSERT INTO borrows (user_id, book_id, borrow_date) " +
-                    "VALUES (?, ?, ?)";
+                // Ensure expected_return_date column exists
+                try {
+                    conn.createStatement().execute("ALTER TABLE borrows ADD COLUMN expected_return_date TEXT");
+                } catch (Exception e) {
+                    // Column already exists
+                }
+                
+                // Create actual borrow record with expected return date
+                String insertBorrowQuery = "INSERT INTO borrows (user_id, book_id, borrow_date, expected_return_date) " +
+                    "VALUES (?, ?, ?, ?)";
                 
                 PreparedStatement ps2 = conn.prepareStatement(insertBorrowQuery);
                 ps2.setInt(1, userId);
                 ps2.setInt(2, bookId);
                 ps2.setString(3, LocalDateTime.now().toString());
+                ps2.setString(4, expectedReturnDate); // Use the expected return date from the request
                 ps2.executeUpdate();
                 
                 // Update book quantity
@@ -523,10 +532,13 @@ public class BorrowRequestManagerUI extends JPanel {
                 PreparedStatement ps3 = conn.prepareStatement(updateBookQuery);
                 ps3.setInt(1, bookId);
                 ps3.executeUpdate();
+                
+                System.out.println("✅ Created borrow record with expected return date: " + expectedReturnDate);
             }
             
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Lỗi tạo bản ghi mượn sách: " + e.getMessage());
+            e.printStackTrace();
         }
     }
     

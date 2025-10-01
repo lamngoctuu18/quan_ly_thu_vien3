@@ -136,21 +136,51 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
     }
     
     /**
-     * Apply current theme to all components
+     * Apply current theme to all components - Cải thiện hiển thị
      */
     private void applyCurrentTheme() {
         SwingUtilities.invokeLater(() -> {
             if (darkModeManager != null) {
-                // Update main content background
+                // Update main content background với gradient đẹp
                 JPanel mainPanel = (JPanel) getContentPane();
                 if (mainPanel != null) {
-                    mainPanel.setBackground(darkModeManager.getBackgroundColor());
+                    if (darkModeManager.isDarkMode()) {
+                        // Dark Mode - nền tối hiện đại
+                        mainPanel.setBackground(DarkModeManager.DarkTheme.PRIMARY_BG);
+                    } else {
+                        // Light Mode - nền sáng tinh tế
+                        mainPanel.setBackground(DarkModeManager.LightTheme.SECONDARY_BG);
+                    }
+                    
+                    // Apply theme to all components
                     darkModeManager.applyDarkMode(mainPanel);
                 }
                 
-                // Update books grid panel
+                // Update books grid panel với màu phù hợp
                 if (booksGridPanel != null) {
-                    booksGridPanel.setBackground(darkModeManager.getSecondaryBackgroundColor());
+                    if (darkModeManager.isDarkMode()) {
+                        booksGridPanel.setBackground(DarkModeManager.DarkTheme.SECONDARY_BG);
+                    } else {
+                        booksGridPanel.setBackground(DarkModeManager.LightTheme.PRIMARY_BG);
+                    }
+                }
+                
+                // Update search button colors
+                updateSearchButtonColors();
+                
+                // Update all component colors in search and filter sections
+                updateComponentColors(getContentPane());
+                
+                // Update window title để hiển thị mode hiện tại
+                String currentTitle = getTitle();
+                if (!currentTitle.contains("Dark Mode") && !currentTitle.contains("Light Mode")) {
+                    String mode = darkModeManager.isDarkMode() ? " (Dark Mode)" : " (Light Mode)";
+                    setTitle(currentTitle + mode);
+                } else {
+                    // Replace existing mode indicator
+                    String baseTitle = currentTitle.replaceAll(" \\((Dark|Light) Mode\\)", "");
+                    String mode = darkModeManager.isDarkMode() ? " (Dark Mode)" : " (Light Mode)";
+                    setTitle(baseTitle + mode);
                 }
                 
                 repaint();
@@ -303,9 +333,9 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
     }
     
     private void createMainInterface() {
-        // Main panel with modern styling
+        // Main panel with modern styling - sẽ được cập nhật bởi Dark Mode
         JPanel mainPanel = new JPanel(new BorderLayout(15, 15));
-        mainPanel.setBackground(new Color(248, 249, 250));
+        mainPanel.setBackground(new Color(248, 249, 250)); // Light mode mặc định
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         setContentPane(mainPanel);
 
@@ -752,6 +782,14 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
         this.userId = id;
         lblUser.setText("Xin chào, " + username);
         
+        System.out.println("🚀 Setting user info - ID: " + id + ", Username: " + username);
+        
+        // Ensure avatar label is visible
+        if (lblAvatar != null) {
+            lblAvatar.setVisible(true);
+            System.out.println("📍 Avatar label visibility: " + lblAvatar.isVisible());
+        }
+        
         // Load and display user avatar from database
         loadUserAvatarFromDB(id);
         
@@ -762,6 +800,14 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
         
         // Hiển thị thông báo quan trọng khi đăng nhập
         showImportantNotificationsOnLogin();
+        
+        // Force repaint of user profile panel
+        SwingUtilities.invokeLater(() -> {
+            if (lblAvatar != null && lblAvatar.getParent() != null) {
+                lblAvatar.getParent().repaint();
+                System.out.println("🔄 Repainted user profile panel");
+            }
+        });
     }
 
     private void addToFavorite(String bookId) {
@@ -821,79 +867,9 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
             return;
         }
         
-        // Show detailed borrow request dialog
+        // Show detailed borrow request dialog - user will confirm there
         showBorrowRequestDialog(bookId, title);
-            java.sql.Connection conn = null;
-            java.sql.PreparedStatement checkPs = null;
-            java.sql.PreparedStatement insertPs = null;
-            java.sql.ResultSet rs = null;
-            
-            try {
-                // Create borrow request directly in database
-                conn = java.sql.DriverManager.getConnection("jdbc:sqlite:C:/data/library.db?busy_timeout=30000");
-                
-                // Check if user already has a pending request for this book
-                String checkQuery = "SELECT id FROM borrow_requests WHERE user_id = ? AND book_id = ? AND status = 'PENDING'";
-                checkPs = conn.prepareStatement(checkQuery);
-                checkPs.setInt(1, userId);
-                checkPs.setString(2, bookId);
-                rs = checkPs.executeQuery();
-                
-                if (rs.next()) {
-                    JOptionPane.showMessageDialog(this, 
-                        "Bạn đã có đăng ký mượn sách này đang chờ duyệt!", 
-                        "Thông báo", 
-                        JOptionPane.WARNING_MESSAGE);
-                    return;
-                }
-                
-                // Close the first query resources
-                if (rs != null) rs.close();
-                if (checkPs != null) checkPs.close();
-                
-                // Create new borrow request
-                String insertQuery = "INSERT INTO borrow_requests (user_id, book_id, request_date, status) VALUES (?, ?, ?, 'PENDING')";
-                insertPs = conn.prepareStatement(insertQuery);
-                insertPs.setInt(1, userId);
-                insertPs.setString(2, bookId);
-                insertPs.setString(3, java.time.LocalDateTime.now().toString());
-                
-                int rowsInserted = insertPs.executeUpdate();
-                
-                if (rowsInserted > 0) {
-                    // Record activity
-                    recordActivity(bookId, "borrow_request");
-                    
-                    JOptionPane.showMessageDialog(this, 
-                        "Đăng ký mượn sách thành công!\n" +
-                        "Vui lòng chờ quản trị viên duyệt đăng ký.", 
-                        "Thành công", 
-                        JOptionPane.INFORMATION_MESSAGE);
-                    refreshBookDisplay();
-                } else {
-                    JOptionPane.showMessageDialog(this, 
-                        "Không thể tạo đăng ký mượn sách!", 
-                        "Lỗi", 
-                        JOptionPane.ERROR_MESSAGE);
-                }
-                
-            } catch (Exception dbEx) {
-                JOptionPane.showMessageDialog(this, 
-                    "Lỗi database: " + dbEx.getMessage(), 
-                    "Lỗi", 
-                    JOptionPane.ERROR_MESSAGE);
-            } finally {
-                // Close all resources properly
-                try {
-                    if (rs != null) rs.close();
-                    if (checkPs != null) checkPs.close();
-                    if (insertPs != null) insertPs.close();
-                    if (conn != null) conn.close();
-                } catch (Exception ex) {
-                    System.err.println("Error closing database resources: " + ex.getMessage());
-                }
-            }
-        }
+    }
     
     private boolean checkBorrowingLimit() {
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:C:/data/library.db?busy_timeout=30000")) {
@@ -974,11 +950,19 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
         formPanel.add(createStyledLabel("Ngày trả dự kiến:"), gbc);
         gbc.gridx = 1;
         JComboBox<String> returnDateCombo = new JComboBox<>();
-        for (int i = 1; i <= 7; i++) {
-            java.time.LocalDate returnDate = java.time.LocalDate.now().plusDays(i);
-            returnDateCombo.addItem(returnDate.toString() + " (" + i + " ngày)");
+        
+        // Add more reasonable borrowing periods (7, 14, 21, 30 days)
+        int[] borrowDays = {7, 14, 21, 30};
+        String[] labels = {"1 tuần", "2 tuần", "3 tuần", "1 tháng"};
+        
+        for (int i = 0; i < borrowDays.length; i++) {
+            java.time.LocalDate returnDate = java.time.LocalDate.now().plusDays(borrowDays[i]);
+            returnDateCombo.addItem(returnDate.toString() + " (" + labels[i] + ")");
         }
-        returnDateCombo.setPreferredSize(new Dimension(200, 35));
+        
+        // Set default to 14 days (2 tuần)
+        returnDateCombo.setSelectedIndex(1);
+        returnDateCombo.setPreferredSize(new Dimension(250, 35));
         returnDateCombo.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         formPanel.add(returnDateCombo, gbc);
         
@@ -2506,14 +2490,35 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
         }
     }
     
+    // Static reference to keep track of open UserProfileUI
+    private static UserProfileUI openUserProfileUI = null;
+    
     private void showUserProfile() {
         if (userId == -1) {
             JOptionPane.showMessageDialog(this, "Vui lòng đăng nhập để xem thông tin cá nhân!");
             return;
         }
         
+        // Check if UserProfileUI is already open
+        if (openUserProfileUI != null && openUserProfileUI.isDisplayable()) {
+            // Bring existing window to front
+            openUserProfileUI.toFront();
+            openUserProfileUI.requestFocus();
+            return;
+        }
+        
         String currentUsername = lblUser.getText().replace("Xin chào, ", "");
-        new UserProfileUI(userId, currentUsername).setVisible(true);
+        openUserProfileUI = new UserProfileUI(userId, currentUsername);
+        
+        // Add window listener to clear reference when window is closed
+        openUserProfileUI.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosed(java.awt.event.WindowEvent e) {
+                openUserProfileUI = null;
+            }
+        });
+        
+        openUserProfileUI.setVisible(true);
     }
     
     private void showNotifications() {
@@ -2550,9 +2555,12 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
     }
     
     private void setDefaultAvatar() {
+        System.out.println("🔵 Setting default avatar");
         // Create a simple default avatar icon
         lblAvatar.setIcon(createDefaultAvatarIcon());
-        lblAvatar.setToolTipText("Click để xem thông tin cá nhân");
+        lblAvatar.setToolTipText("Click để xem thông tin cá nhân - Default Avatar");
+        lblAvatar.repaint();
+        System.out.println("✅ Default avatar set successfully");
     }
     
     private ImageIcon createDefaultAvatarIcon() {
@@ -2562,24 +2570,50 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
         Graphics2D g2d = image.createGraphics();
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         
+        // Choose colors based on Dark Mode
+        Color bgColor1, bgColor2, borderColor, textColor;
+        if (darkModeManager != null && darkModeManager.isDarkMode()) {
+            bgColor1 = new Color(88, 166, 255);  // Bright blue
+            bgColor2 = new Color(74, 144, 226);  // Darker blue
+            borderColor = new Color(88, 166, 255, 180);
+            textColor = Color.WHITE;
+        } else {
+            bgColor1 = new Color(52, 152, 219);  // Original blue
+            bgColor2 = new Color(41, 128, 185);  // Original darker blue
+            borderColor = new Color(255, 255, 255, 150);
+            textColor = Color.WHITE;
+        }
+        
         // Draw circle background with gradient
-        GradientPaint gradient = new GradientPaint(0, 0, new Color(52, 152, 219), size, size, new Color(41, 128, 185));
+        GradientPaint gradient = new GradientPaint(0, 0, bgColor1, size, size, bgColor2);
         g2d.setPaint(gradient);
         g2d.fillOval(0, 0, size, size);
         
         // Draw border
-        g2d.setColor(new Color(255, 255, 255, 150));
-        g2d.setStroke(new BasicStroke(1.0f));
-        g2d.drawOval(0, 0, size-1, size-1);
+        g2d.setColor(borderColor);
+        g2d.setStroke(new BasicStroke(2.0f));
+        g2d.drawOval(1, 1, size-3, size-3);
         
         // Draw user icon
-        g2d.setColor(Color.WHITE);
-        g2d.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        g2d.setColor(textColor);
+        g2d.setFont(new Font("Segoe UI", Font.BOLD, 14));
         FontMetrics fm = g2d.getFontMetrics();
-        String text = "U";
-        int x = (size - fm.stringWidth(text)) / 2;
-        int y = ((size - fm.getHeight()) / 2) + fm.getAscent();
-        g2d.drawString(text, x, y);
+        String text = "👤";  // Using emoji for better visibility
+        
+        // If emoji doesn't work, fall back to text
+        try {
+            int x = (size - fm.stringWidth(text)) / 2;
+            int y = ((size - fm.getHeight()) / 2) + fm.getAscent();
+            g2d.drawString(text, x, y);
+        } catch (Exception e) {
+            // Fallback to simple "U"
+            g2d.setFont(new Font("Segoe UI", Font.BOLD, 12));
+            fm = g2d.getFontMetrics();
+            text = "U";
+            int x = (size - fm.stringWidth(text)) / 2;
+            int y = ((size - fm.getHeight()) / 2) + fm.getAscent();
+            g2d.drawString(text, x, y);
+        }
         
         g2d.dispose();
         return new ImageIcon(image);
@@ -2590,13 +2624,19 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
         JPanel searchContainer = new JPanel(new BorderLayout(0, 10));
         searchContainer.setOpaque(false);
         
-        // Search title
-        JLabel searchTitle = new JLabel("Tìm kiếm sách");
+        // Search title with Dark Mode support
+        JLabel searchTitle = new JLabel("🔍 Tìm kiếm sách");
         searchTitle.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        searchTitle.setForeground(new Color(52, 58, 64));
         searchTitle.setBorder(BorderFactory.createEmptyBorder(0, 5, 10, 0));
         
-        // Search input panel with rounded design
+        // Set title color based on Dark Mode
+        if (darkModeManager != null && darkModeManager.isDarkMode()) {
+            searchTitle.setForeground(DarkModeManager.DarkTheme.PRIMARY_TEXT);
+        } else {
+            searchTitle.setForeground(DarkModeManager.LightTheme.PRIMARY_TEXT);
+        }
+        
+        // Search input panel with Dark Mode support
         JPanel searchInputPanel = new JPanel(new BorderLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
@@ -2604,36 +2644,65 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 
+                // Get colors based on Dark Mode
+                Color bgColor, borderColor;
+                if (darkModeManager != null && darkModeManager.isDarkMode()) {
+                    bgColor = DarkModeManager.DarkTheme.SECONDARY_BG;
+                    borderColor = new Color(75, 85, 99); // Dark border color
+                } else {
+                    bgColor = Color.WHITE;
+                    borderColor = new Color(206, 212, 218);
+                }
+                
+                // Draw subtle shadow first
+                g2d.setColor(new Color(0, 0, 0, 10));
+                g2d.fillRoundRect(2, 2, getWidth()-2, getHeight()-2, 14, 14);
+                
                 // Draw rounded background
-                g2d.setColor(Color.WHITE);
+                g2d.setColor(bgColor);
                 g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
                 
-                // Draw border
-                g2d.setColor(new Color(206, 212, 218));
+                // Draw border with glow effect in Dark Mode
+                if (darkModeManager != null && darkModeManager.isDarkMode()) {
+                    // Subtle glow effect
+                    g2d.setColor(new Color(59, 130, 246, 30));
+                    g2d.setStroke(new BasicStroke(2.0f));
+                    g2d.drawRoundRect(0, 0, getWidth()-1, getHeight()-1, 12, 12);
+                }
+                
+                g2d.setColor(borderColor);
                 g2d.setStroke(new BasicStroke(1.0f));
                 g2d.drawRoundRect(0, 0, getWidth()-1, getHeight()-1, 12, 12);
             }
         };
         searchInputPanel.setOpaque(false);
-        searchInputPanel.setPreferredSize(new Dimension(500, 45));
+        searchInputPanel.setPreferredSize(new Dimension(500, 48));
         searchInputPanel.setBorder(BorderFactory.createEmptyBorder(1, 1, 1, 1));
         
-        // Search label
-        JLabel searchIcon = new JLabel("Tìm:");
-        searchIcon.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        searchIcon.setBorder(BorderFactory.createEmptyBorder(0, 12, 0, 8));
+        // Search label with icon
+        JLabel searchIcon = new JLabel("🔍");
+        searchIcon.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        searchIcon.setBorder(BorderFactory.createEmptyBorder(0, 15, 0, 8));
         
-        // Search field with no border
+        // Set icon color based on Dark Mode
+        if (darkModeManager != null && darkModeManager.isDarkMode()) {
+            searchIcon.setForeground(DarkModeManager.DarkTheme.SECONDARY_TEXT);
+        } else {
+            searchIcon.setForeground(DarkModeManager.LightTheme.SECONDARY_TEXT);
+        }
+        
+        // Search field with Dark Mode support
         txtSearch = new JTextField(25);
-        txtSearch.setPreferredSize(new Dimension(350, 43));
+        txtSearch.setPreferredSize(new Dimension(350, 46));
         txtSearch.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        txtSearch.setBorder(BorderFactory.createEmptyBorder(10, 5, 10, 10));
+        txtSearch.setBorder(BorderFactory.createEmptyBorder(12, 5, 12, 12));
         txtSearch.setOpaque(false);
         txtSearch.setBackground(new Color(0, 0, 0, 0));
         
-        // Add placeholder functionality
+        // Add placeholder functionality with Dark Mode colors
         String placeholder = "Nhập tên sách hoặc tác giả...";
-        txtSearch.setForeground(Color.GRAY);
+        Color placeholderColor = new Color(156, 163, 175);
+        txtSearch.setForeground(placeholderColor);
         txtSearch.setText(placeholder);
         
         txtSearch.addFocusListener(new FocusAdapter() {
@@ -2641,41 +2710,34 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
             public void focusGained(FocusEvent e) {
                 if (txtSearch.getText().equals(placeholder)) {
                     txtSearch.setText("");
-                    txtSearch.setForeground(Color.BLACK);
+                    // Set text color based on Dark Mode
+                    if (darkModeManager != null && darkModeManager.isDarkMode()) {
+                        txtSearch.setForeground(DarkModeManager.DarkTheme.PRIMARY_TEXT);
+                    } else {
+                        txtSearch.setForeground(DarkModeManager.LightTheme.PRIMARY_TEXT);
+                    }
                 }
             }
             
             @Override
             public void focusLost(FocusEvent e) {
                 if (txtSearch.getText().isEmpty()) {
-                    txtSearch.setForeground(Color.GRAY);
+                    txtSearch.setForeground(placeholderColor);
                     txtSearch.setText(placeholder);
                 }
             }
         });
         
-        // Modern search button
-        btnSearch = new JButton("Tìm kiếm");
-        btnSearch.setPreferredSize(new Dimension(100, 43));
-        btnSearch.setBackground(new Color(0, 123, 255));
-        btnSearch.setForeground(Color.WHITE);
+        // Modern search button with Dark Mode support
+        btnSearch = new JButton("🔍 Tìm kiếm");
+        btnSearch.setPreferredSize(new Dimension(110, 46));
         btnSearch.setFont(new Font("Segoe UI", Font.BOLD, 13));
         btnSearch.setFocusPainted(false);
         btnSearch.setBorder(BorderFactory.createEmptyBorder());
         btnSearch.setCursor(new Cursor(Cursor.HAND_CURSOR));
         
-        // Add hover effect to button
-        btnSearch.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                btnSearch.setBackground(new Color(0, 100, 200));
-            }
-            
-            @Override
-            public void mouseExited(MouseEvent e) {
-                btnSearch.setBackground(new Color(0, 123, 255));
-            }
-        });
+        // Set colors based on Dark Mode
+        updateSearchButtonColors();
         
         searchInputPanel.add(searchIcon, BorderLayout.WEST);
         searchInputPanel.add(txtSearch, BorderLayout.CENTER);
@@ -2692,13 +2754,19 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
         JPanel filterContainer = new JPanel(new BorderLayout(0, 10));
         filterContainer.setOpaque(false);
         
-        // Filter title
-        JLabel filterTitle = new JLabel("Bộ lọc nâng cao");
+        // Filter title with Dark Mode support
+        JLabel filterTitle = new JLabel("⚙️ Bộ lọc nâng cao");
         filterTitle.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        filterTitle.setForeground(new Color(52, 58, 64));
         filterTitle.setBorder(BorderFactory.createEmptyBorder(10, 5, 10, 0));
         
-        // Filter panel with card design
+        // Set title color based on Dark Mode
+        if (darkModeManager != null && darkModeManager.isDarkMode()) {
+            filterTitle.setForeground(DarkModeManager.DarkTheme.PRIMARY_TEXT);
+        } else {
+            filterTitle.setForeground(DarkModeManager.LightTheme.PRIMARY_TEXT);
+        }
+        
+        // Filter panel with card design and Dark Mode support
         JPanel filterPanel = new JPanel(new GridBagLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
@@ -2706,21 +2774,41 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 
-                // Draw rounded background with subtle shadow effect
-                g2d.setColor(new Color(0, 0, 0, 5));
-                g2d.fillRoundRect(2, 2, getWidth()-2, getHeight()-2, 15, 15);
+                // Get colors based on Dark Mode
+                Color bgColor, borderColor, shadowColor;
+                if (darkModeManager != null && darkModeManager.isDarkMode()) {
+                    bgColor = DarkModeManager.DarkTheme.CARD_BG;
+                    borderColor = DarkModeManager.DarkTheme.BORDER_COLOR;
+                    shadowColor = new Color(0, 0, 0, 20);
+                } else {
+                    bgColor = DarkModeManager.LightTheme.CARD_BG;
+                    borderColor = DarkModeManager.LightTheme.BORDER_COLOR;
+                    shadowColor = new Color(0, 0, 0, 8);
+                }
                 
-                g2d.setColor(Color.WHITE);
-                g2d.fillRoundRect(0, 0, getWidth()-2, getHeight()-2, 15, 15);
+                // Draw subtle shadow effect
+                g2d.setColor(shadowColor);
+                g2d.fillRoundRect(3, 3, getWidth()-3, getHeight()-3, 16, 16);
                 
-                // Draw border
-                g2d.setColor(new Color(230, 236, 241));
+                // Draw rounded background
+                g2d.setColor(bgColor);
+                g2d.fillRoundRect(0, 0, getWidth()-3, getHeight()-3, 15, 15);
+                
+                // Draw modern border with glow effect in Dark Mode
+                if (darkModeManager != null && darkModeManager.isDarkMode()) {
+                    // Subtle glow effect
+                    g2d.setColor(new Color(88, 166, 255, 15));
+                    g2d.setStroke(new BasicStroke(2.0f));
+                    g2d.drawRoundRect(1, 1, getWidth()-5, getHeight()-5, 15, 15);
+                }
+                
+                g2d.setColor(borderColor);
                 g2d.setStroke(new BasicStroke(1.0f));
-                g2d.drawRoundRect(0, 0, getWidth()-3, getHeight()-3, 15, 15);
+                g2d.drawRoundRect(0, 0, getWidth()-4, getHeight()-4, 15, 15);
             }
         };
         filterPanel.setOpaque(false);
-        filterPanel.setBorder(BorderFactory.createEmptyBorder(20, 25, 20, 25));
+        filterPanel.setBorder(BorderFactory.createEmptyBorder(25, 30, 25, 30));
         
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(8, 10, 8, 10);
@@ -2728,73 +2816,35 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
         
         // Author filter
         gbc.gridx = 0; gbc.gridy = 0;
-        JLabel lblAuthor = new JLabel("Tác giả:");
-        lblAuthor.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        lblAuthor.setForeground(new Color(73, 80, 87));
+        JLabel lblAuthor = createDarkModeLabel("✍️ Tác giả:");
         filterPanel.add(lblAuthor, gbc);
         
         gbc.gridx = 1;
-        txtAuthor = createModernTextField("Nhập tên tác giả...", 140);
+        txtAuthor = createDarkModeTextField("Nhập tên tác giả...", 140);
         filterPanel.add(txtAuthor, gbc);
         
         // Publisher filter
         gbc.gridx = 2; gbc.gridy = 0;
-        JLabel lblPublisher = new JLabel("🏢 Nhà XB:");
-        lblPublisher.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        lblPublisher.setForeground(new Color(73, 80, 87));
+        JLabel lblPublisher = createDarkModeLabel("🏢 Nhà XB:");
         filterPanel.add(lblPublisher, gbc);
         
         gbc.gridx = 3;
-        txtPublisher = createModernTextField("Nhập nhà xuất bản...", 140);
+        txtPublisher = createDarkModeTextField("Nhập nhà xuất bản...", 140);
         filterPanel.add(txtPublisher, gbc);
         
         // Category filter
         gbc.gridx = 4; gbc.gridy = 0;
-        JLabel lblCategory = new JLabel("Thể loại:");
-        lblCategory.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        lblCategory.setForeground(new Color(73, 80, 87));
+        JLabel lblCategory = createDarkModeLabel("📚 Thể loại:");
         filterPanel.add(lblCategory, gbc);
         
         gbc.gridx = 5;
-        cbCategory = new JComboBox<>(CATEGORIES);
-        cbCategory.setPreferredSize(new Dimension(160, 38));
-        cbCategory.setBackground(Color.WHITE);
-        cbCategory.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        cbCategory.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(206, 212, 218), 1),
-            BorderFactory.createEmptyBorder(8, 10, 8, 10)
-        ));
+        cbCategory = createDarkModeComboBox(CATEGORIES);
         filterPanel.add(cbCategory, gbc);
         
-        // Clear filter button
+        // Clear filter button with Dark Mode support
         gbc.gridx = 6; gbc.gridy = 0;
         gbc.insets = new Insets(8, 20, 8, 10);
-        JButton btnClearFilter = new JButton("🗑️ Xóa bộ lọc");
-        btnClearFilter.setPreferredSize(new Dimension(120, 38));
-        btnClearFilter.setBackground(new Color(248, 249, 250));
-        btnClearFilter.setForeground(new Color(73, 80, 87));
-        btnClearFilter.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btnClearFilter.setFocusPainted(false);
-        btnClearFilter.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(206, 212, 218), 1),
-            BorderFactory.createEmptyBorder(8, 12, 8, 12)
-        ));
-        btnClearFilter.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        
-        // Add clear filter functionality
-        btnClearFilter.addActionListener(e -> clearAllFilters());
-        btnClearFilter.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                btnClearFilter.setBackground(new Color(233, 236, 239));
-            }
-            
-            @Override
-            public void mouseExited(MouseEvent e) {
-                btnClearFilter.setBackground(new Color(248, 249, 250));
-            }
-        });
-        
+        JButton btnClearFilter = createDarkModeClearButton();
         filterPanel.add(btnClearFilter, gbc);
         
         filterContainer.add(filterTitle, BorderLayout.NORTH);
@@ -2803,47 +2853,59 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
         return filterContainer;
     }
     
-    private JTextField createModernTextField(String placeholder, int width) {
-        JTextField textField = new JTextField();
-        textField.setPreferredSize(new Dimension(width, 38));
-        textField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        textField.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(206, 212, 218), 1),
-            BorderFactory.createEmptyBorder(8, 10, 8, 10)
-        ));
-        textField.setBackground(Color.WHITE);
+
+    
+    /**
+     * Update search button colors based on Dark Mode
+     */
+    private void updateSearchButtonColors() {
+        if (btnSearch == null) return;
         
-        // Add placeholder functionality
-        textField.setForeground(Color.GRAY);
-        textField.setText(placeholder);
-        
-        textField.addFocusListener(new FocusAdapter() {
-            @Override
-            public void focusGained(FocusEvent e) {
-                if (textField.getText().equals(placeholder)) {
-                    textField.setText("");
-                    textField.setForeground(Color.BLACK);
-                }
-            }
+        if (darkModeManager != null && darkModeManager.isDarkMode()) {
+            // Dark Mode colors
+            btnSearch.setBackground(DarkModeManager.DarkTheme.PRIMARY_ACCENT);
+            btnSearch.setForeground(Color.WHITE);
             
-            @Override
-            public void focusLost(FocusEvent e) {
-                if (textField.getText().isEmpty()) {
-                    textField.setForeground(Color.GRAY);
-                    textField.setText(placeholder);
+            // Add modern hover effect for Dark Mode
+            btnSearch.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    btnSearch.setBackground(DarkModeManager.DarkTheme.HOVER_BORDER);
                 }
-            }
-        });
-        
-        return textField;
+                
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    btnSearch.setBackground(DarkModeManager.DarkTheme.PRIMARY_ACCENT);
+                }
+            });
+        } else {
+            // Light Mode colors
+            btnSearch.setBackground(DarkModeManager.LightTheme.PRIMARY_ACCENT);
+            btnSearch.setForeground(Color.WHITE);
+            
+            // Add hover effect for Light Mode
+            btnSearch.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    btnSearch.setBackground(DarkModeManager.LightTheme.HOVER_BORDER);
+                }
+                
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    btnSearch.setBackground(DarkModeManager.LightTheme.PRIMARY_ACCENT);
+                }
+            });
+        }
     }
+    
+
     
     private void clearAllFilters() {
         txtAuthor.setText("Nhập tên tác giả...");
-        txtAuthor.setForeground(Color.GRAY);
+        txtAuthor.setForeground(new Color(156, 163, 175));
         
         txtPublisher.setText("Nhập nhà xuất bản...");
-        txtPublisher.setForeground(Color.GRAY);
+        txtPublisher.setForeground(new Color(156, 163, 175));
         
         cbCategory.setSelectedIndex(0); // Select "Tất cả"
         
@@ -2851,36 +2913,259 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
         refreshBookDisplay();
     }
     
+    /**
+     * Create Dark Mode compatible text field
+     */
+    private JTextField createDarkModeTextField(String placeholder, int width) {
+        JTextField textField = new JTextField();
+        textField.setPreferredSize(new Dimension(width, 42));
+        textField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        
+        // Set colors based on Dark Mode
+        Color bgColor, borderColor, textColor;
+        if (darkModeManager != null && darkModeManager.isDarkMode()) {
+            bgColor = DarkModeManager.DarkTheme.SURFACE_BG;
+            borderColor = DarkModeManager.DarkTheme.BORDER_COLOR;
+            textColor = DarkModeManager.DarkTheme.PRIMARY_TEXT;
+        } else {
+            bgColor = DarkModeManager.LightTheme.SURFACE_BG;
+            borderColor = DarkModeManager.LightTheme.BORDER_COLOR;
+            textColor = DarkModeManager.LightTheme.PRIMARY_TEXT;
+        }
+        
+        textField.setBackground(bgColor);
+        textField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(borderColor, 1),
+            BorderFactory.createEmptyBorder(10, 12, 10, 12)
+        ));
+        
+        // Add placeholder functionality with Dark Mode colors
+        Color placeholderColor = new Color(156, 163, 175);
+        textField.setForeground(placeholderColor);
+        textField.setText(placeholder);
+        
+        textField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (textField.getText().equals(placeholder)) {
+                    textField.setText("");
+                    textField.setForeground(textColor);
+                }
+                // Add focus border effect
+                textField.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(darkModeManager != null && darkModeManager.isDarkMode() 
+                        ? DarkModeManager.DarkTheme.FOCUS_BORDER 
+                        : DarkModeManager.LightTheme.FOCUS_BORDER, 2),
+                    BorderFactory.createEmptyBorder(9, 11, 9, 11)
+                ));
+            }
+            
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (textField.getText().isEmpty()) {
+                    textField.setForeground(placeholderColor);
+                    textField.setText(placeholder);
+                }
+                // Remove focus border
+                textField.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(borderColor, 1),
+                    BorderFactory.createEmptyBorder(10, 12, 10, 12)
+                ));
+            }
+        });
+        
+        return textField;
+    }
+    
+    /**
+     * Create Dark Mode compatible combo box
+     */
+    private JComboBox<String> createDarkModeComboBox(String[] items) {
+        JComboBox<String> comboBox = new JComboBox<>(items);
+        comboBox.setPreferredSize(new Dimension(170, 42));
+        comboBox.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        
+        // Set colors based on Dark Mode
+        if (darkModeManager != null && darkModeManager.isDarkMode()) {
+            comboBox.setBackground(DarkModeManager.DarkTheme.SURFACE_BG);
+            comboBox.setForeground(DarkModeManager.DarkTheme.PRIMARY_TEXT);
+            comboBox.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(DarkModeManager.DarkTheme.BORDER_COLOR, 1),
+                BorderFactory.createEmptyBorder(10, 12, 10, 12)
+            ));
+        } else {
+            comboBox.setBackground(DarkModeManager.LightTheme.SURFACE_BG);
+            comboBox.setForeground(DarkModeManager.LightTheme.PRIMARY_TEXT);
+            comboBox.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(DarkModeManager.LightTheme.BORDER_COLOR, 1),
+                BorderFactory.createEmptyBorder(10, 12, 10, 12)
+            ));
+        }
+        
+        return comboBox;
+    }
+    
+    /**
+     * Create Dark Mode compatible clear button
+     */
+    private JButton createDarkModeClearButton() {
+        JButton btnClearFilter = new JButton("🗑️ Xóa bộ lọc");
+        btnClearFilter.setPreferredSize(new Dimension(130, 42));
+        btnClearFilter.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btnClearFilter.setFocusPainted(false);
+        btnClearFilter.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        // Set colors based on Dark Mode
+        Color bgColor, textColor, hoverColor, borderColor;
+        if (darkModeManager != null && darkModeManager.isDarkMode()) {
+            bgColor = DarkModeManager.DarkTheme.SURFACE_BG;
+            textColor = DarkModeManager.DarkTheme.SECONDARY_TEXT;
+            hoverColor = DarkModeManager.DarkTheme.HOVER_BG;
+            borderColor = DarkModeManager.DarkTheme.BORDER_COLOR;
+        } else {
+            bgColor = new Color(248, 249, 250);
+            textColor = new Color(73, 80, 87);
+            hoverColor = new Color(233, 236, 239);
+            borderColor = DarkModeManager.LightTheme.BORDER_COLOR;
+        }
+        
+        btnClearFilter.setBackground(bgColor);
+        btnClearFilter.setForeground(textColor);
+        btnClearFilter.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(borderColor, 1),
+            BorderFactory.createEmptyBorder(10, 15, 10, 15)
+        ));
+        
+        // Add functionality and hover effects
+        btnClearFilter.addActionListener(e -> clearAllFilters());
+        btnClearFilter.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                btnClearFilter.setBackground(hoverColor);
+            }
+            
+            @Override
+            public void mouseExited(MouseEvent e) {
+                btnClearFilter.setBackground(bgColor);
+            }
+        });
+        
+        return btnClearFilter;
+    }
+    
+    /**
+     * Create Dark Mode compatible label
+     */
+    private JLabel createDarkModeLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        
+        // Set color based on Dark Mode
+        if (darkModeManager != null && darkModeManager.isDarkMode()) {
+            label.setForeground(DarkModeManager.DarkTheme.PRIMARY_TEXT);
+        } else {
+            label.setForeground(DarkModeManager.LightTheme.PRIMARY_TEXT);
+        }
+        
+        return label;
+    }
+    
+
+    
+    /**
+     * Recursively update component colors
+     */
+    private void updateComponentColors(Container container) {
+        for (Component comp : container.getComponents()) {
+            if (comp instanceof JLabel) {
+                JLabel label = (JLabel) comp;
+                if (darkModeManager != null && darkModeManager.isDarkMode()) {
+                    label.setForeground(DarkModeManager.DarkTheme.PRIMARY_TEXT);
+                } else {
+                    label.setForeground(DarkModeManager.LightTheme.PRIMARY_TEXT);
+                }
+            } else if (comp instanceof JTextField) {
+                JTextField textField = (JTextField) comp;
+                if (darkModeManager != null && darkModeManager.isDarkMode()) {
+                    textField.setBackground(DarkModeManager.DarkTheme.SURFACE_BG);
+                    if (!textField.getText().contains("Nhập")) {
+                        textField.setForeground(DarkModeManager.DarkTheme.PRIMARY_TEXT);
+                    }
+                } else {
+                    textField.setBackground(DarkModeManager.LightTheme.SURFACE_BG);
+                    if (!textField.getText().contains("Nhập")) {
+                        textField.setForeground(DarkModeManager.LightTheme.PRIMARY_TEXT);
+                    }
+                }
+            } else if (comp instanceof JComboBox) {
+                JComboBox<?> comboBox = (JComboBox<?>) comp;
+                if (darkModeManager != null && darkModeManager.isDarkMode()) {
+                    comboBox.setBackground(DarkModeManager.DarkTheme.SURFACE_BG);
+                    comboBox.setForeground(DarkModeManager.DarkTheme.PRIMARY_TEXT);
+                } else {
+                    comboBox.setBackground(DarkModeManager.LightTheme.SURFACE_BG);
+                    comboBox.setForeground(DarkModeManager.LightTheme.PRIMARY_TEXT);
+                }
+            } else if (comp instanceof Container) {
+                updateComponentColors((Container) comp);
+            }
+        }
+    }
+    
     private void loadUserAvatar(String avatarUrl) {
         if (avatarUrl == null || avatarUrl.isEmpty()) {
+            System.out.println("⚡ Avatar URL is null/empty, using default");
             setDefaultAvatar();
             return;
         }
         
+        System.out.println("🖼️ Loading avatar from: " + avatarUrl);
+        
         // Load avatar from URL in background thread
-        SwingUtilities.invokeLater(() -> {
+        new Thread(() -> {
             try {
                 ImageIcon icon = null;
                 
                 // Check if it's a URL or local file path
                 if (avatarUrl.startsWith("http://") || avatarUrl.startsWith("https://")) {
-                    // It's a URL
+                    System.out.println("🌐 Loading from web URL: " + avatarUrl);
                     URL url = new URL(avatarUrl);
                     icon = new ImageIcon(url);
-                } else if (avatarUrl.startsWith("file://") || avatarUrl.startsWith("/") || avatarUrl.contains(":\\")) {
-                    // It's a local file path
-                    icon = new ImageIcon(avatarUrl);
-                } else {
-                    // Assume it's a URL if no protocol specified
-                    URL url = new URL("http://" + avatarUrl);
+                } else if (avatarUrl.startsWith("file://")) {
+                    System.out.println("📁 Loading from file URL: " + avatarUrl);
+                    URL url = new URL(avatarUrl);
                     icon = new ImageIcon(url);
+                } else if (avatarUrl.startsWith("/") || avatarUrl.contains(":\\")) {
+                    System.out.println("💾 Loading from local path: " + avatarUrl);
+                    // Check if file exists
+                    java.io.File file = new java.io.File(avatarUrl);
+                    if (file.exists()) {
+                        icon = new ImageIcon(avatarUrl);
+                    } else {
+                        System.out.println("❌ Local file not found: " + avatarUrl);
+                        SwingUtilities.invokeLater(() -> setDefaultAvatar());
+                        return;
+                    }
+                } else {
+                    System.out.println("🌐 Assuming web URL (adding http): " + avatarUrl);
+                    try {
+                        URL url = new URL("https://" + avatarUrl);
+                        icon = new ImageIcon(url);
+                    } catch (Exception e1) {
+                        System.out.println("🔄 Trying with http: " + avatarUrl);
+                        URL url = new URL("http://" + avatarUrl);
+                        icon = new ImageIcon(url);
+                    }
                 }
                 
                 // Check if image loaded successfully
-                if (icon.getIconWidth() <= 0 || icon.getIconHeight() <= 0) {
-                    setDefaultAvatar();
+                if (icon == null || icon.getIconWidth() <= 0 || icon.getIconHeight() <= 0) {
+                    System.out.println("❌ Failed to load image or invalid dimensions");
+                    SwingUtilities.invokeLater(() -> setDefaultAvatar());
                     return;
                 }
+                
+                System.out.println("✅ Image loaded successfully: " + icon.getIconWidth() + "x" + icon.getIconHeight());
                 
                 // Resize image to fit avatar label
                 Image img = icon.getImage();
@@ -2895,44 +3180,68 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
                 g2d.setClip(new java.awt.geom.Ellipse2D.Float(0, 0, 28, 28));
                 g2d.drawImage(scaledImg, 0, 0, null);
                 
-                // Draw border
+                // Draw border with better visibility
                 g2d.setClip(null);
-                g2d.setColor(new Color(255, 255, 255, 150));
-                g2d.setStroke(new BasicStroke(1.0f));
-                g2d.drawOval(0, 0, 27, 27);
+                if (darkModeManager != null && darkModeManager.isDarkMode()) {
+                    g2d.setColor(new Color(88, 166, 255, 150)); // Blue border in dark mode
+                } else {
+                    g2d.setColor(new Color(0, 123, 255, 150)); // Blue border in light mode
+                }
+                g2d.setStroke(new BasicStroke(2.0f));
+                g2d.drawOval(1, 1, 25, 25);
                 
                 g2d.dispose();
                 
-                lblAvatar.setIcon(new ImageIcon(circularImage));
-                lblAvatar.setToolTipText("Click để xem thông tin cá nhân");
+                SwingUtilities.invokeLater(() -> {
+                    lblAvatar.setIcon(new ImageIcon(circularImage));
+                    lblAvatar.setToolTipText("Click để xem thông tin cá nhân - Avatar loaded from: " + avatarUrl);
+                    lblAvatar.repaint();
+                    System.out.println("🎉 Avatar set successfully!");
+                });
                 
             } catch (Exception e) {
-                System.err.println("Error loading avatar from URL: " + e.getMessage());
-                setDefaultAvatar(); // Fall back to default avatar
+                System.err.println("💥 Error loading avatar from URL '" + avatarUrl + "': " + e.getMessage());
+                e.printStackTrace();
+                SwingUtilities.invokeLater(() -> setDefaultAvatar());
             }
-        });
+        }).start();
     }
     
     private void loadUserAvatarFromDB(int userId) {
+        System.out.println("🔍 Loading avatar for user ID: " + userId);
+        
         // Load user avatar URL from database in background thread
         new Thread(() -> {
             try (Connection conn = DriverManager.getConnection("jdbc:sqlite:C:/data/library.db?busy_timeout=30000")) {
-                String sql = "SELECT avatar FROM users WHERE id = ?";
+                String sql = "SELECT username, avatar FROM users WHERE id = ?";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
                 pstmt.setInt(1, userId);
                 ResultSet rs = pstmt.executeQuery();
                 
                 if (rs.next()) {
+                    String username = rs.getString("username");
                     String avatarUrl = rs.getString("avatar");
-                    SwingUtilities.invokeLater(() -> loadUserAvatar(avatarUrl));
+                    System.out.println("📸 Found user: " + username + ", avatar: " + 
+                        (avatarUrl != null && !avatarUrl.isEmpty() ? avatarUrl : "null/empty"));
+                    
+                    SwingUtilities.invokeLater(() -> {
+                        if (avatarUrl != null && !avatarUrl.trim().isEmpty()) {
+                            loadUserAvatar(avatarUrl.trim());
+                        } else {
+                            System.out.println("⚡ Using default avatar for user: " + username);
+                            setDefaultAvatar();
+                        }
+                    });
                 } else {
+                    System.out.println("❌ No user found with ID: " + userId);
                     SwingUtilities.invokeLater(() -> setDefaultAvatar());
                 }
                 
                 rs.close();
                 pstmt.close();
             } catch (Exception e) {
-                System.err.println("Error loading user avatar from database: " + e.getMessage());
+                System.err.println("💥 Error loading user avatar from database: " + e.getMessage());
+                e.printStackTrace();
                 SwingUtilities.invokeLater(() -> setDefaultAvatar());
             }
         }).start();

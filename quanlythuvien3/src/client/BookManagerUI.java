@@ -630,10 +630,12 @@ public class BookManagerUI extends JFrame {
         }
         
         // Tạo dialog sửa sách với giao diện đẹp và chuyên nghiệp
-        JDialog editDialog = new JDialog(this, "Chỉnh sửa thông tin sách", true);
-        editDialog.setSize(900, 750);
-        editDialog.setLocationRelativeTo(this);
-        editDialog.setResizable(false);
+    JDialog editDialog = new JDialog(this, "Chỉnh sửa thông tin sách", true);
+    // Increased default height to show more fields comfortably
+    editDialog.setSize(1100, 920);
+    editDialog.setMinimumSize(new Dimension(1100, 920));
+    editDialog.setLocationRelativeTo(this);
+    editDialog.setResizable(true);
         
         // Panel chính với gradient background chuyên nghiệp
         JPanel mainPanel = new JPanel(new BorderLayout()) {
@@ -731,9 +733,9 @@ public class BookManagerUI extends JFrame {
         JScrollPane editScrollDescription = new JScrollPane(editDescription);
         editScrollDescription.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         editScrollDescription.setBorder(BorderFactory.createLineBorder(new Color(206, 212, 218), 1));
-        editScrollDescription.setPreferredSize(new Dimension(320, 100));
-        editScrollDescription.setMinimumSize(new Dimension(320, 100));
-        editScrollDescription.setMaximumSize(new Dimension(320, 100));
+    editScrollDescription.setPreferredSize(new Dimension(320, 140));
+    editScrollDescription.setMinimumSize(new Dimension(320, 140));
+    editScrollDescription.setMaximumSize(new Dimension(320, 140));
         
         // Trường ảnh bìa với thiết kế chuyên nghiệp
         JTextField editImageUrl = createModernTextField(currentImageUrl, 25);
@@ -830,8 +832,8 @@ public class BookManagerUI extends JFrame {
         ));
         imagePreviewPanel.add(editImagePreview, BorderLayout.CENTER);
         
-        contentPanel.add(formPanel, BorderLayout.CENTER);
-        contentPanel.add(imagePreviewPanel, BorderLayout.EAST);
+    contentPanel.add(formPanel, BorderLayout.CENTER);
+    contentPanel.add(imagePreviewPanel, BorderLayout.EAST);
         
         // Button panel với thiết kế chuyên nghiệp
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
@@ -845,7 +847,7 @@ public class BookManagerUI extends JFrame {
         btnSave.setBorder(BorderFactory.createEmptyBorder(12, 30, 12, 30));
         btnSave.setFocusPainted(false);
         btnSave.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnSave.setPreferredSize(new Dimension(140, 45));
+    btnSave.setPreferredSize(new Dimension(180, 45));
         
         JButton btnCancel = new JButton("Hủy bỏ");
         btnCancel.setBackground(new Color(220, 53, 69));
@@ -854,7 +856,7 @@ public class BookManagerUI extends JFrame {
         btnCancel.setBorder(BorderFactory.createEmptyBorder(12, 30, 12, 30));
         btnCancel.setFocusPainted(false);
         btnCancel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnCancel.setPreferredSize(new Dimension(140, 45));
+    btnCancel.setPreferredSize(new Dimension(160, 45));
         
         btnSave.addActionListener(e -> {
             try (Connection conn = getConn()) {
@@ -883,10 +885,30 @@ public class BookManagerUI extends JFrame {
         
         buttonPanel.add(btnSave);
         buttonPanel.add(btnCancel);
+
+        // Keyboard shortcuts: Enter to save, Esc to cancel
+        editDialog.getRootPane().setDefaultButton(btnSave);
+        javax.swing.InputMap im = mainPanel.getInputMap(javax.swing.JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+        javax.swing.ActionMap am = mainPanel.getActionMap();
+        if (im != null && am != null) {
+            im.put(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0), "closeDialog");
+            am.put("closeDialog", new javax.swing.AbstractAction() {
+                @Override
+                public void actionPerformed(java.awt.event.ActionEvent e) {
+                    editDialog.dispose();
+                }
+            });
+        }
         
         // Lắp ráp dialog với thiết kế chuyên nghiệp
-        mainPanel.add(headerPanel, BorderLayout.NORTH);
-        mainPanel.add(contentPanel, BorderLayout.CENTER);
+    mainPanel.add(headerPanel, BorderLayout.NORTH);
+    // Wrap content in scroll to ensure all fields fit on smaller screens
+    JScrollPane contentScroll = new JScrollPane(contentPanel);
+    contentScroll.setBorder(BorderFactory.createEmptyBorder());
+    contentScroll.getViewport().setOpaque(false);
+    contentScroll.setOpaque(false);
+    contentScroll.getVerticalScrollBar().setUnitIncrement(16);
+    mainPanel.add(contentScroll, BorderLayout.CENTER);
         mainPanel.add(buttonPanel, BorderLayout.SOUTH);
         
         editDialog.add(mainPanel);
