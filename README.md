@@ -49,31 +49,6 @@ Hệ thống quản lý sách - thư viện qua mạng được xây dựng nh�
 - 🛡️ Phân quyền người dùng (admin, user).
 - 🖼️ Giao diện thân thiện, dễ sử dụng, sinh động với icon và màu sắc.
 
-### ✨ **Các cập nhật, tính năng mới (đã bổ sung)**
-- 🌓 Dark Mode cho toàn bộ ứng dụng (client/admin) và giữ nguyên màu các nút đặc biệt khi đổi theme (ví dụ nút "Clear filter").
-- 🗓️ Cột "Hạn trả" tính theo `borrow_request.expected_return_date` (server đã cập nhật SQL, kèm fallback từ `borrow_date` nếu chưa có expected date).
-- 🔔 Tô màu trực quan: sách sắp hết hạn (trong 1–3 ngày) và quá hạn được highlight để quản trị xử lý nhanh.
-- 🧩 Luồng đăng ký mượn an toàn: không tự động tạo yêu cầu khi đóng tab/huỷ — chỉ tạo khi người dùng bấm "Gửi đăng ký".
-- 📊 Hộp thoại Thống kê (quản lý mượn/trả) hiện đại hơn: thẻ số liệu (cards), biểu đồ tháng dạng text có tỉ lệ hoá theo giá trị lớn nhất, khu vực "Hoạt động gần đây" trình bày rõ ràng.
-- 📝 Dialog "Chỉnh sửa thông tin sách" được mở rộng chiều cao, thêm cuộn dọc, hỗ trợ phím tắt Enter (Lưu) và Esc (Đóng) để thao tác nhanh.
-- ♻️ Tương thích Java 8+: thay `String.repeat(...)` bằng xây dựng chuỗi an toàn; sửa lỗi diamond `<>` trong anonymous class (ví dụ `new JList<String>(...) { ... }`).
-- 🎨 Cải tiến UX/UI: màu sắc, khoảng cách, border/gradient nhẹ giúp giao diện hiện đại và nhất quán.
-
-### 🗂️ **Bố cục file (tóm tắt + tác dụng)**
-- `quanlythuvien3/src/app/MainApp.java` — Điểm vào ứng dụng phía client (khởi chạy UI chính).
-- `quanlythuvien3/src/client/ClientUI.java` — Giao diện người dùng; xử lý mượn/trả bên client, sửa luồng đăng ký mượn và giữ màu nút khi đổi theme.
-- `quanlythuvien3/src/client/BorrowManagementUI.java` — Quản lý mượn/trả (admin); chứa dialog Thống kê nâng cấp, hiển thị biểu đồ tháng, danh sách hoạt động gần đây; đã fix tương thích Java 8.
-- `quanlythuvien3/src/client/BookManagerUI.java` — Quản lý sách; dialog chỉnh sửa sách cao hơn, có preview ảnh bìa, hỗ trợ Enter/Esc, thêm cuộn dọc khi cần.
-- `quanlythuvien3/src/client/UserManagerUI.java` — Quản lý người dùng; tinh gọn ô tìm kiếm, tối ưu hiển thị.
-- `quanlythuvien3/src/client/UserProfileUI.java` — Hồ sơ người dùng + thống kê cá nhân; cải thiện độ chính xác số liệu.
-- `quanlythuvien3/src/server/ClientHandler.java` — Xử lý request của client; SQL trả về hạn trả theo `borrow_request.expected_return_date` (với COALESCE fallback).
-- `quanlythuvien3/src/server/LibraryServer.java` — Server TCP tiếp nhận/điều phối yêu cầu.
-- `quanlythuvien3/src/server/InitDatabase.java` — Khởi tạo CSDL SQLite (tạo bảng, dữ liệu mẫu nếu cần).
-- `quanlythuvien3/src/dao/*.java` — Lớp DAO làm việc với SQLite (BookDAO, BorrowDAO, UserDAO).
-- `quanlythuvien3/src/model/*.java` — Các lớp mô hình dữ liệu: `Book`, `Borrow`, `User`.
-- `bin/` — Thư mục output chứa file `.class` sau khi biên dịch.
-- `README.md` — Tài liệu hướng dẫn tổng quan dự án.
-
 ## 2. Công nghệ sử dụng
 
 - ☕ Java (Swing, JDBC)
