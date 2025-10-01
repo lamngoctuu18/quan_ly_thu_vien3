@@ -37,10 +37,10 @@ public class AdminLoginUI extends JFrame {
                 
                 int w = getWidth(), h = getHeight();
                 
-                // Create sophisticated gradient background
+                // Create navy to light blue gradient background
                 GradientPaint gp = new GradientPaint(
-                    0, 0, new Color(25, 32, 72),      // Dark navy blue
-                    w, h, new Color(44, 62, 80)       // Slate blue
+                    0, 0, new Color(13, 39, 80),      // Navy blue
+                    0, h, new Color(41, 84, 144)      // Light blue
                 );
                 g2d.setPaint(gp);
                 g2d.fillRect(0, 0, w, h);
@@ -138,16 +138,16 @@ public class AdminLoginUI extends JFrame {
         iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         iconPanel.add(iconLabel);
 
-        // Main title with glow effect
+        // Main title - large, bold, white/light blue
         JLabel titleLabel = new JLabel("ADMINISTRATOR", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
-        titleLabel.setForeground(Color.WHITE);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 32));
+        titleLabel.setForeground(new Color(173, 216, 230)); // Light blue
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // Subtitle with elegant styling
+        // Subtitle - smaller, light gray, positioned right below
         JLabel subtitleLabel = new JLabel("Secure Access Portal", SwingConstants.CENTER);
-        subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-        subtitleLabel.setForeground(new Color(189, 195, 199));
+        subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        subtitleLabel.setForeground(new Color(189, 195, 199)); // Light gray
         subtitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         // System info
@@ -178,19 +178,21 @@ public class AdminLoginUI extends JFrame {
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 
-                // Create glass-like background with rounded corners
-                int arc = 20;
+                // Create soft rounded background with light shadow
+                int arc = 14;
+                
+                // Drop shadow effect
+                g2d.setColor(new Color(0, 0, 0, 30));
+                g2d.fillRoundRect(3, 3, getWidth() - 3, getHeight() - 3, arc, arc);
+                
+                // Main form background
                 g2d.setColor(new Color(255, 255, 255, 25));
-                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), arc, arc);
+                g2d.fillRoundRect(0, 0, getWidth() - 3, getHeight() - 3, arc, arc);
                 
-                // Add subtle border
-                g2d.setColor(new Color(255, 255, 255, 40));
-                g2d.setStroke(new BasicStroke(1.5f));
-                g2d.drawRoundRect(1, 1, getWidth() - 2, getHeight() - 2, arc, arc);
-                
-                // Add inner glow
-                g2d.setColor(new Color(52, 152, 219, 15));
-                g2d.fillRoundRect(2, 2, getWidth() - 4, getHeight() - 4, arc - 2, arc - 2);
+                // Light blue border
+                g2d.setColor(new Color(173, 216, 230, 80)); // Light blue border
+                g2d.setStroke(new BasicStroke(1.2f));
+                g2d.drawRoundRect(1, 1, getWidth() - 5, getHeight() - 5, arc, arc);
             }
         };
         formPanel.setOpaque(false);
@@ -212,17 +214,17 @@ public class AdminLoginUI extends JFrame {
                 
                 // Background
                 g2d.setColor(new Color(255, 255, 255, 15));
-                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
                 
-                // Border
+                // Border - light blue when focused, brighter blue when active
                 if (hasFocus()) {
-                    g2d.setColor(new Color(52, 152, 219, 150));
+                    g2d.setColor(new Color(41, 128, 185)); // Bright blue when focused
                     g2d.setStroke(new BasicStroke(2));
                 } else {
-                    g2d.setColor(new Color(255, 255, 255, 60));
+                    g2d.setColor(new Color(173, 216, 230, 100)); // Light blue border
                     g2d.setStroke(new BasicStroke(1));
                 }
-                g2d.drawRoundRect(1, 1, getWidth() - 2, getHeight() - 2, 8, 8);
+                g2d.drawRoundRect(1, 1, getWidth() - 2, getHeight() - 2, 10, 10);
                 
                 super.paintComponent(g);
             }
@@ -261,17 +263,17 @@ public class AdminLoginUI extends JFrame {
                 
                 // Background
                 g2d.setColor(new Color(255, 255, 255, 15));
-                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
                 
-                // Border
+                // Border - light blue when focused, brighter blue when active
                 if (txtPassword.hasFocus()) {
-                    g2d.setColor(new Color(52, 152, 219, 150));
+                    g2d.setColor(new Color(41, 128, 185)); // Bright blue when focused
                     g2d.setStroke(new BasicStroke(2));
                 } else {
-                    g2d.setColor(new Color(255, 255, 255, 60));
+                    g2d.setColor(new Color(173, 216, 230, 100)); // Light blue border
                     g2d.setStroke(new BasicStroke(1));
                 }
-                g2d.drawRoundRect(1, 1, getWidth() - 2, getHeight() - 2, 8, 8);
+                g2d.drawRoundRect(1, 1, getWidth() - 2, getHeight() - 2, 10, 10);
             }
         };
         passPanel.setOpaque(false);
@@ -297,47 +299,66 @@ public class AdminLoginUI extends JFrame {
             }
         });
 
-        JToggleButton btnShowPass = new JToggleButton("Show") {
+        JToggleButton btnShowPass = new JToggleButton("Hiện") {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 
                 if (isSelected()) {
-                    g2d.setColor(new Color(52, 152, 219, 100));
+                    g2d.setColor(new Color(41, 128, 185, 120));
                 } else {
-                    g2d.setColor(new Color(255, 255, 255, 30));
+                    g2d.setColor(new Color(255, 255, 255, 25));
                 }
-                g2d.fillRoundRect(2, 2, getWidth() - 4, getHeight() - 4, 6, 6);
+                g2d.fillRoundRect(2, 2, getWidth() - 4, getHeight() - 4, 8, 8);
                 
                 super.paintComponent(g);
             }
         };
         btnShowPass.setFocusPainted(false);
         btnShowPass.setOpaque(false);
-        btnShowPass.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 15));
-        btnShowPass.setPreferredSize(new Dimension(60, 45));
-        btnShowPass.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        btnShowPass.setForeground(Color.WHITE);
+        btnShowPass.setBorder(BorderFactory.createEmptyBorder(5, 8, 5, 12));
+        btnShowPass.setPreferredSize(new Dimension(50, 45));
+        btnShowPass.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        btnShowPass.setForeground(Color.BLACK);
         btnShowPass.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
         btnShowPass.addActionListener(e -> {
             if (btnShowPass.isSelected()) {
                 txtPassword.setEchoChar((char) 0);
-                btnShowPass.setText("Hide");
+                btnShowPass.setText("Ẩn");
             } else {
                 txtPassword.setEchoChar('●');
-                btnShowPass.setText("Show");
+                btnShowPass.setText("Hiện");
             }
         });
 
         passPanel.add(txtPassword, BorderLayout.CENTER);
         passPanel.add(btnShowPass, BorderLayout.EAST);
 
-        // Message label with professional styling
-        lblMessage = new JLabel("", SwingConstants.CENTER);
-        lblMessage.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        lblMessage.setForeground(new Color(231, 76, 60));
+        // Message label with light red background box styling
+        lblMessage = new JLabel("", SwingConstants.CENTER) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                if (getText() != null && !getText().isEmpty()) {
+                    Graphics2D g2d = (Graphics2D) g;
+                    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    
+                    // Light red background box
+                    g2d.setColor(new Color(231, 76, 60, 40));
+                    g2d.fillRoundRect(5, 2, getWidth() - 10, getHeight() - 4, 8, 8);
+                    
+                    // Red border
+                    g2d.setColor(new Color(231, 76, 60, 100));
+                    g2d.setStroke(new BasicStroke(1));
+                    g2d.drawRoundRect(5, 2, getWidth() - 10, getHeight() - 4, 8, 8);
+                }
+                super.paintComponent(g);
+            }
+        };
+        lblMessage.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lblMessage.setForeground(new Color(220, 50, 50));
+        lblMessage.setOpaque(false);
 
         // Security note with enhanced styling
         JLabel securityNote = new JLabel("Restricted Access Area", SwingConstants.CENTER);
@@ -377,21 +398,21 @@ public class AdminLoginUI extends JFrame {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
         buttonPanel.setOpaque(false);
 
-        // Login button with professional styling
-        JButton btnLogin = new JButton("� ACCESS SYSTEM") {
+        // Login button - deep blue background, white text, bold font
+        JButton btnLogin = new JButton("Đăng nhập") {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 
-                // Button background with gradient
+                // Deep blue background with hover effect
                 GradientPaint gp;
                 if (getModel().isPressed()) {
-                    gp = new GradientPaint(0, 0, new Color(22, 160, 133), 0, getHeight(), new Color(26, 188, 156));
+                    gp = new GradientPaint(0, 0, new Color(23, 54, 93), 0, getHeight(), new Color(31, 72, 124));
                 } else if (getModel().isRollover()) {
-                    gp = new GradientPaint(0, 0, new Color(26, 188, 156), 0, getHeight(), new Color(22, 160, 133));
+                    gp = new GradientPaint(0, 0, new Color(52, 103, 171), 0, getHeight(), new Color(41, 84, 144)); // Brighter blue on hover
                 } else {
-                    gp = new GradientPaint(0, 0, new Color(46, 204, 113), 0, getHeight(), new Color(39, 174, 96));
+                    gp = new GradientPaint(0, 0, new Color(31, 72, 124), 0, getHeight(), new Color(23, 54, 93)); // Deep dark blue
                 }
                 g2d.setPaint(gp);
                 g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
@@ -405,27 +426,27 @@ public class AdminLoginUI extends JFrame {
             }
         };
         btnLogin.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        btnLogin.setForeground(new Color(255, 255, 255));
+        btnLogin.setForeground(Color.BLACK);
         btnLogin.setBorder(BorderFactory.createEmptyBorder(15, 30, 15, 30));
         btnLogin.setPreferredSize(new Dimension(180, 50));
         btnLogin.setFocusPainted(false);
         btnLogin.setOpaque(false);
         btnLogin.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-        // Back button with elegant styling
-        JButton btnBack = new JButton("← BACK") {
+        // Back button - light gray background, black text
+        JButton btnBack = new JButton("Quay lại") {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 
-                // Button background
+                // Light gray background with hover effect
                 if (getModel().isPressed()) {
-                    g2d.setColor(new Color(255, 255, 255, 40));
+                    g2d.setColor(new Color(180, 180, 180, 60));
                 } else if (getModel().isRollover()) {
-                    g2d.setColor(new Color(255, 255, 255, 25));
+                    g2d.setColor(new Color(200, 200, 200, 50)); // Darker gray on hover
                 } else {
-                    g2d.setColor(new Color(255, 255, 255, 15));
+                    g2d.setColor(new Color(220, 220, 220, 40)); // Light gray
                 }
                 g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
                 
@@ -438,7 +459,7 @@ public class AdminLoginUI extends JFrame {
             }
         };
         btnBack.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        btnBack.setForeground(new Color(220, 225, 230));
+        btnBack.setForeground(new Color(80, 80, 80)); // Dark gray text
         btnBack.setBorder(BorderFactory.createEmptyBorder(15, 30, 15, 30));
         btnBack.setPreferredSize(new Dimension(180, 50));
         btnBack.setFocusPainted(false);

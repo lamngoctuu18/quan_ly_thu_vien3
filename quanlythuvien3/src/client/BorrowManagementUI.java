@@ -14,6 +14,8 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
+import java.io.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 public class BorrowManagementUI extends JFrame {
     private DefaultTableModel borrowModel;
@@ -22,9 +24,16 @@ public class BorrowManagementUI extends JFrame {
     private JComboBox<String> cbStatus;
     private JLabel lblBorrowCount;
     private TableRowSorter<DefaultTableModel> sorter;
-    private JButton btnRefresh;
+    private JButton btnRefresh, btnExport;
+    
+    // Resource managers để giữ BorrowManagement ổn định
+    private DatabaseManager dbManager;
+    private BackgroundTaskManager taskManager;
 
     public BorrowManagementUI() {
+        // Khởi tạo resource managers trước
+        initializeResourceManagers();
+        
         setTitle("Quản lý mượn/trả");
         setSize(1400, 850); // Increased size for better responsive layout
         setMinimumSize(new Dimension(1200, 700)); // Set minimum size
@@ -220,7 +229,7 @@ public class BorrowManagementUI extends JFrame {
         
         // Create buttons with smaller size for better responsive
         btnRefresh = createActionButton("Làm mới", new Color(40, 167, 69), "Làm mới dữ liệu");
-        JButton btnExport = createActionButton("Excel", new Color(0, 123, 255), "Xuất dữ liệu ra Excel");
+        btnExport = createActionButton("Excel", new Color(0, 123, 255), "Xuất dữ liệu ra Excel");
         JButton btnStats = createActionButton("Thống kê", new Color(255, 193, 7), "Xem thống kê chi tiết");
         
         // Add hover effects
@@ -511,8 +520,8 @@ public class BorrowManagementUI extends JFrame {
             txtSearchBook.setText("");
             cbStatus.setSelectedIndex(0); // Reset to "Tất cả"
             
-            // Reload data
-            loadBorrowData();
+            // Reload data với loading
+            executeWithLoading("Đang làm mới dữ liệu mượn/trả...", this::loadBorrowData);
             
             // Clear any active filters
             sorter.setRowFilter(null);
@@ -533,7 +542,8 @@ public class BorrowManagementUI extends JFrame {
             timer.start();
         });
         
-        // TODO: Add other button listeners (Export, Statistics) when needed
+        // Export to Excel button event listener
+        btnExport.addActionListener(e -> exportToExcel());
     }
     
     private void applyFilters() {
@@ -817,7 +827,7 @@ public class BorrowManagementUI extends JFrame {
             btnNotify.setForeground(Color.WHITE);
             btnNotify.setFocusPainted(false);
             btnNotify.setBorderPainted(false);
-            btnNotify.setPreferredSize(new Dimension(80, 30));
+            btnNotify.setPreferredSize(new Dimension(100, 30));
             
             btnReturn = new JButton("Trả sách");
             btnReturn.setFont(new Font("Segoe UI", Font.PLAIN, 12));
@@ -899,7 +909,7 @@ public class BorrowManagementUI extends JFrame {
         private void sendNotificationToUser() {
             try {
                 String[] parts = currentValue.split("\\|");
-                int borrowId = Integer.parseInt(parts[0]);
+                // int borrowId = Integer.parseInt(parts[0]); // Not needed for notification
                 int userId = Integer.parseInt(parts[1]);
                 
                 // Get book info
@@ -979,6 +989,193 @@ public class BorrowManagementUI extends JFrame {
         }
     }
     
+    private void exportToExcel() {
+        try {
+            // Create file chooser for saving Excel file
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Xuất dữ liệu ra Excel");
+            fileChooser.setSelectedFile(new File("Danh_sach_muon_tra_" + 
+                LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".csv"));
+            
+            FileNameExtensionFilter filter = new FileNameExtensionFilter("CSV Files (*.csv)", "csv");
+            fileChooser.setFileFilter(filter);
+            
+            int userSelection = fileChooser.showSaveDialog(this);
+            
+            if (userSelection == JFileChooser.APPROVE_OPTION) {
+                File fileToSave = fileChooser.getSelectedFile();
+                
+                // Ensure .csv extension
+                if (!fileToSave.getName().endsWith(".csv")) {
+                    fileToSave = new File(fileToSave.getAbsolutePath() + ".csv");
+                }
+                
+                // Export data to CSV (Excel compatible)
+                exportTableDataToCSV(fileToSave);
+                
+                // Show success message
+                int choice = JOptionPane.showConfirmDialog(this,
+                    "Xuất dữ liệu thành công!\nFile đã được lưu tại: " + fileToSave.getAbsolutePath() + 
+                    "\n\nBạn có muốn mở file ngay không?",
+                    "Xuất dữ liệu thành công",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.INFORMATION_MESSAGE);
+                
+                if (choice == JOptionPane.YES_OPTION) {
+                    // Open file with default application
+                    if (Desktop.isDesktopSupported()) {
+                        Desktop.getDesktop().open(fileToSave);
+                    }
+                }
+            }
+            
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this,
+                "Lỗi khi xuất dữ liệu: " + e.getMessage(),
+                "Lỗi xuất dữ liệu",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    private void exportTableDataToCSV(File file) throws IOException {
+        try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(
+                new FileOutputStream(file), "UTF-8"))) {
+            
+            // Write BOM for UTF-8 to ensure proper display in Excel
+            writer.write('\ufeff');
+            
+            // Write header with additional info
+            writer.println("DANH SÁCH QUẢN LÝ MƯỢN TRẢ SÁCH");
+            writer.println("Ngày xuất: " + LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+            writer.println("Tổng số bản ghi: " + borrowTable.getRowCount());
+            writer.println(); // Empty line
+            
+            // Write table headers
+            writer.print("STT,");
+            for (int col = 0; col < borrowTable.getColumnCount() - 1; col++) { // Exclude action column
+                String columnName = borrowTable.getColumnName(col);
+                writer.print("\"" + columnName + "\",");
+            }
+            writer.print("\"Trạng thái\",\"Số ngày còn lại\"");
+            writer.println();
+            
+            // Write table data
+            for (int row = 0; row < borrowTable.getRowCount(); row++) {
+                writer.print((row + 1) + ","); // STT
+                
+                for (int col = 0; col < borrowTable.getColumnCount() - 1; col++) { // Exclude action column
+                    Object value = borrowTable.getValueAt(row, col);
+                    String cellValue = value != null ? value.toString() : "";
+                    writer.print("\"" + cellValue.replace("\"", "\"\"") + "\",");
+                }
+                
+                // Add status and days remaining
+                try {
+                    String dueDateStr = (String) borrowTable.getValueAt(row, 5);
+                    if (dueDateStr != null && !dueDateStr.isEmpty()) {
+                        LocalDate dueDate = LocalDate.parse(dueDateStr, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                        LocalDate today = LocalDate.now();
+                        long daysRemaining = ChronoUnit.DAYS.between(today, dueDate);
+                        
+                        String status = "";
+                        if (daysRemaining < 0) {
+                            status = "Quá hạn";
+                        } else if (daysRemaining <= 1) {
+                            status = "Sắp hết hạn";
+                        } else {
+                            status = "Bình thường";
+                        }
+                        
+                        writer.print("\"" + status + "\",\"" + daysRemaining + "\"");
+                    } else {
+                        writer.print("\"\",\"\"");
+                    }
+                } catch (Exception e) {
+                    writer.print("\"\",\"\"");
+                }
+                
+                writer.println();
+            }
+            
+            // Write summary statistics
+            writer.println();
+            writer.println("THỐNG KÊ TỔNG HỢP:");
+            
+            int totalCount = borrowTable.getRowCount();
+            int overdueCount = 0;
+            int dueSoonCount = 0;
+            int normalCount = 0;
+            
+            for (int i = 0; i < borrowTable.getRowCount(); i++) {
+                try {
+                    String dueDateStr = (String) borrowTable.getValueAt(i, 5);
+                    if (dueDateStr != null && !dueDateStr.isEmpty()) {
+                        LocalDate dueDate = LocalDate.parse(dueDateStr, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                        LocalDate today = LocalDate.now();
+                        long daysRemaining = ChronoUnit.DAYS.between(today, dueDate);
+                        
+                        if (daysRemaining < 0) {
+                            overdueCount++;
+                        } else if (daysRemaining <= 1) {
+                            dueSoonCount++;
+                        } else {
+                            normalCount++;
+                        }
+                    }
+                } catch (Exception e) {
+                    // Skip invalid entries
+                }
+            }
+            
+            writer.println("Tổng số đang mượn:," + totalCount);
+            writer.println("Quá hạn:," + overdueCount);
+            writer.println("Sắp hết hạn:," + dueSoonCount);
+            writer.println("Bình thường:," + normalCount);
+        }
+    }
+    
+    /**
+     * Khởi tạo resource managers
+     */
+    private void initializeResourceManagers() {
+        try {
+            dbManager = DatabaseManager.getInstance();
+            taskManager = BackgroundTaskManager.getInstance();
+            System.out.println("BorrowManagement resource managers initialized");
+        } catch (Exception e) {
+            System.err.println("Failed to initialize BorrowManagement resources: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Execute operations với loading dialog
+     */
+    public void executeWithLoading(String message, Runnable task) {
+        if (taskManager != null) {
+            taskManager.executeWithLoading(
+                this,
+                message,
+                () -> {
+                    task.run();
+                    return null;
+                },
+                result -> {
+                    // Success callback
+                },
+                error -> {
+                    SwingUtilities.invokeLater(() -> {
+                        JOptionPane.showMessageDialog(this,
+                            "Lỗi: " + error.getMessage(),
+                            "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    });
+                }
+            );
+        } else {
+            // Fallback
+            task.run();
+        }
+    }
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             new BorrowManagementUI().setVisible(true);

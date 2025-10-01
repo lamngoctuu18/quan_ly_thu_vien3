@@ -13,8 +13,15 @@ public class UserManagerUI extends JFrame {
     private JButton btnSearch, btnBack;
     private JTable userTable;
     private DefaultTableModel userModel;
+    
+    // Resource managers để giữ UserManager ổn định
+    private DatabaseManager dbManager;
+    private BackgroundTaskManager taskManager;
 
     public UserManagerUI() {
+        // Khởi tạo resource managers
+        initializeResourceManagers();
+        
         setTitle("Quản lý người dùng");
         setMinimumSize(new Dimension(1000, 650));
         setPreferredSize(new Dimension(1200, 750));
@@ -215,7 +222,7 @@ public class UserManagerUI extends JFrame {
         buttonPanel.add(btnBack);
         
         // Add event listeners
-        btnSearch.addActionListener(e -> loadUsers());
+        btnSearch.addActionListener(e -> executeWithLoading("Đang tìm kiếm người dùng...", this::loadUsers));
         btnBack.addActionListener(e -> refreshData());
         
         return buttonPanel;
@@ -289,7 +296,49 @@ public class UserManagerUI extends JFrame {
             JOptionPane.INFORMATION_MESSAGE);
     }
 
+    /**
+     * Khởi tạo resource managers
+     */
+    private void initializeResourceManagers() {
+        try {
+            dbManager = DatabaseManager.getInstance();
+            taskManager = BackgroundTaskManager.getInstance();
+            System.out.println("UserManager resource managers initialized");
+        } catch (Exception e) {
+            System.err.println("Failed to initialize UserManager resources: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Execute operations với loading dialog
+     */
+    public void executeWithLoading(String message, Runnable task) {
+        if (taskManager != null) {
+            taskManager.executeWithLoading(
+                this,
+                message,
+                () -> {
+                    task.run();
+                    return null;
+                },
+                result -> {
+                    // Success callback
+                },
+                error -> {
+                    SwingUtilities.invokeLater(() -> {
+                        JOptionPane.showMessageDialog(this,
+                            "Lỗi: " + error.getMessage(),
+                            "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    });
+                }
+            );
+        } else {
+            // Fallback
+            task.run();
+        }
+    }
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new UserManagerUI().setVisible(true));
     }
-    }
+}

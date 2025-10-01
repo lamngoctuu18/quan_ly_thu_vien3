@@ -16,7 +16,7 @@ public class RegisterUI extends JFrame {
 
     public RegisterUI(Runnable onRegisterSuccess) {
         setTitle("Đăng ký tài khoản - Hệ thống quản lý thư viện");
-        setMinimumSize(new Dimension(520, 650));
+        setMinimumSize(new Dimension(550, 950));
         setPreferredSize(new Dimension(580, 850));
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setResizable(false);

@@ -14,8 +14,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.net.URL;
+import java.util.concurrent.ScheduledFuture;
 
-public class ClientUI extends JFrame {
+public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener {
     private JTextField txtSearch, txtAuthor, txtPublisher;
     private JComboBox<String> cbCategory;
     private JButton btnSearch, btnBorrow, btnFavorite, btnActivity;
@@ -24,10 +25,28 @@ public class ClientUI extends JFrame {
     private JButton btnNotification;
     private int userId = -1;
     
+    // Pagination variables
+    private int currentPage = 1;
+    private int itemsPerPage = 18;
+    private int totalItems = 0;
+    private int totalPages = 0;
+    private JPanel booksGridPanel;
+    private JLabel lblPageInfo;
+    private JButton btnPrevPage, btnNextPage, btnFirstPage, btnLastPage;
+    
     private Socket socket;
     private PrintWriter out;
     private BufferedReader in;
     private JPopupMenu suggestPopup;
+    
+    // Resource management
+    private DatabaseManager dbManager;
+    private BackgroundTaskManager taskManager;
+    private ScheduledFuture<?> keepAliveTask;
+    private Timer refreshTimer;
+    
+    // Dark Mode support
+    private DarkModeManager darkModeManager;
 
     private static final String[] CATEGORIES = {
         "Tất cả",
@@ -49,6 +68,12 @@ public class ClientUI extends JFrame {
         setMinimumSize(new Dimension(1200, 800));
         setPreferredSize(new Dimension(1400, 900));
         
+        // Initialize resource managers
+        initializeResourceManagers();
+        
+        // Initialize Dark Mode
+        initializeDarkMode();
+        
         // Initialize database tables
         initializeBorrowRequestsTable();
         
@@ -61,11 +86,222 @@ public class ClientUI extends JFrame {
         // Connect to server
         connectToServer();
         
+        // Setup keep-alive system to prevent timeout  
+        try {
+            ClientUIEnhancement enhancement = ClientUIEnhancement.getInstance();
+            enhancement.initializeKeepAlive(this);
+            
+            // Setup additional periodic tasks and shutdown hooks
+            setupPeriodicTasks();
+            setupShutdownHook();
+        } catch (Exception e) {
+            System.err.println("Failed to initialize enhancement: " + e.getMessage());
+        }
+        
         // Setup window
         pack();
         setLocationRelativeTo(null);
     }
+    
+    /**
+     * Initialize resource managers to prevent memory leaks and timeouts
+     */
+    private void initializeResourceManagers() {
+        try {
+            dbManager = DatabaseManager.getInstance();
+            taskManager = BackgroundTaskManager.getInstance();
+            System.out.println("Resource managers initialized successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to initialize resource managers: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * Initialize Dark Mode support
+     */
+    private void initializeDarkMode() {
+        try {
+            darkModeManager = DarkModeManager.getInstance();
+            darkModeManager.addDarkModeListener(this);
+            
+            // Apply current theme
+            applyCurrentTheme();
+            
+            System.out.println("✅ Dark Mode support initialized successfully");
+        } catch (Exception e) {
+            System.err.println("❌ Failed to initialize Dark Mode: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * Apply current theme to all components
+     */
+    private void applyCurrentTheme() {
+        SwingUtilities.invokeLater(() -> {
+            if (darkModeManager != null) {
+                // Update main content background
+                JPanel mainPanel = (JPanel) getContentPane();
+                if (mainPanel != null) {
+                    mainPanel.setBackground(darkModeManager.getBackgroundColor());
+                    darkModeManager.applyDarkMode(mainPanel);
+                }
+                
+                // Update books grid panel
+                if (booksGridPanel != null) {
+                    booksGridPanel.setBackground(darkModeManager.getSecondaryBackgroundColor());
+                }
+                
+                repaint();
+            }
+        });
+    }
+    
+    /**
+     * Dark mode change callback
+     */
+    @Override
+    public void onDarkModeChanged(boolean isDarkMode) {
+        applyCurrentTheme();
+    }
+    
+    /**
+     * Setup periodic tasks to keep application alive
+     */
+    private void setupPeriodicTasks() {
+        // Keep database connection alive with periodic ping
+        refreshTimer = new Timer(300000, e -> { // 5 minutes
+            if (dbManager != null) {
+                SwingUtilities.invokeLater(() -> {
+                    try {
+                        dbManager.executeWithConnection(conn -> {
+                            // Simple query to keep connection alive
+                            conn.createStatement().executeQuery("SELECT 1").close();
+                            return null;
+                        });
+                    } catch (Exception ex) {
+                        System.err.println("Keep-alive query failed: " + ex.getMessage());
+                    }
+                });
+            }
+        });
+        refreshTimer.start();
+        
+        // Auto-refresh notification badge every 2 minutes
+        Timer notificationTimer = new Timer(120000, e -> {
+            if (userId != -1) {
+                SwingUtilities.invokeLater(() -> {
+                    if (btnNotification != null) {
+                        updateNotificationBadge(btnNotification);
+                    }
+                });
+            }
+        });
+        notificationTimer.start();
+        
+        System.out.println("Periodic tasks setup completed");
+    }
+    
+    /**
+     * Configure smooth scrolling for JScrollPane to reduce jerkiness
+     */
+    private void configureSmoothScrolling(JScrollPane scrollPane) {
+        // Set smooth scroll increments
+        scrollPane.getVerticalScrollBar().setUnitIncrement(8);    // Small increment for smooth scrolling
+        scrollPane.getVerticalScrollBar().setBlockIncrement(24);  // Medium increment for page scrolling
+        
+        // Add custom mouse wheel listener for better control
+        scrollPane.addMouseWheelListener(new MouseWheelListener() {
+            @Override
+            public void mouseWheelMoved(MouseWheelEvent e) {
+                if (e.isControlDown()) {
+                    return; // Let default zoom behavior work
+                }
+                
+                JScrollBar scrollBar = scrollPane.getVerticalScrollBar();
+                // Reduced sensitivity: từ 20 xuống 6 để giảm giật
+                int scrollAmount = e.getUnitsToScroll() * 6;
+                int currentValue = scrollBar.getValue();
+                int newValue = Math.max(0, Math.min(
+                    currentValue + scrollAmount, 
+                    scrollBar.getMaximum() - scrollBar.getVisibleAmount()
+                ));
+                
+                // Direct smooth scroll without complex animation
+                scrollBar.setValue(newValue);
+                e.consume(); // Prevent default scrolling
+            }
+        });
+    }
 
+    /**
+     * Setup shutdown hook to cleanup resources
+     */
+    private void setupShutdownHook() {
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                cleanup();
+                System.exit(0);
+            }
+        });
+        
+        // JVM shutdown hook as backup
+        Runtime.getRuntime().addShutdownHook(new Thread(this::cleanup));
+    }
+    
+    /**
+     * Cleanup all resources
+     */
+    private void cleanup() {
+        try {
+            System.out.println("Starting application cleanup...");
+            
+            // Cleanup dark mode listener
+            if (darkModeManager != null) {
+                darkModeManager.removeDarkModeListener(this);
+            }
+            
+            // Stop timers
+            if (refreshTimer != null && refreshTimer.isRunning()) {
+                refreshTimer.stop();
+            }
+            
+            // Stop keep-alive task
+            if (keepAliveTask != null && !keepAliveTask.isCancelled()) {
+                keepAliveTask.cancel(true);
+            }
+            
+            // Close socket connection
+            if (socket != null && !socket.isClosed()) {
+                try {
+                    if (out != null) out.close();
+                    if (in != null) in.close();
+                    socket.close();
+                } catch (Exception e) {
+                    System.err.println("Error closing socket: " + e.getMessage());
+                }
+            }
+            
+            // Shutdown background task manager
+            if (taskManager != null) {
+                taskManager.shutdown();
+            }
+            
+            // Shutdown database manager
+            if (dbManager != null) {
+                dbManager.shutdown();
+            }
+            
+            System.out.println("Application cleanup completed");
+            
+        } catch (Exception e) {
+            System.err.println("Error during cleanup: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
     private void createMainInterface() {
         // Main panel with modern styling
         JPanel mainPanel = new JPanel(new BorderLayout(15, 15));
@@ -151,22 +387,54 @@ public class ClientUI extends JFrame {
             }
         });
         
+        // Dark Mode toggle button
+        JButton btnDarkMode = darkModeManager.createDarkModeToggleButton();
+        
         // Notification button (replace logout button)
-        btnNotification = new JButton("Thông báo");
-        btnNotification.setPreferredSize(new Dimension(50, 40));
+        btnNotification = new JButton("🔔 Thông báo");
+        btnNotification.setPreferredSize(new Dimension(120, 40));
         btnNotification.setBackground(new Color(255, 140, 0));
         btnNotification.setForeground(Color.WHITE);
-        btnNotification.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        btnNotification.setFont(new Font("Segoe UI", Font.BOLD, 14));
         btnNotification.setFocusPainted(false);
         btnNotification.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
         btnNotification.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnNotification.setToolTipText("Thông báo");
+        btnNotification.setToolTipText("Xem thông báo của bạn");
         btnNotification.addActionListener(e -> showNotifications());
+        
+        // Add hover effects for notification button
+        btnNotification.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                Color currentBg = btnNotification.getBackground();
+                if (currentBg.equals(new Color(255, 140, 0))) {
+                    // Orange -> Darker orange
+                    btnNotification.setBackground(new Color(230, 120, 0));
+                } else if (currentBg.equals(new Color(231, 76, 60))) {
+                    // Red -> Darker red
+                    btnNotification.setBackground(new Color(200, 60, 45));
+                }
+            }
+            
+            @Override
+            public void mouseExited(MouseEvent e) {
+                // Restore original color based on notification count
+                if (userId != -1) {
+                    int unreadCount = NotificationUI.getUnreadNotificationCount(userId);
+                    if (unreadCount > 0) {
+                        btnNotification.setBackground(new Color(231, 76, 60)); // Red
+                    } else {
+                        btnNotification.setBackground(new Color(255, 140, 0)); // Orange
+                    }
+                }
+            }
+        });
         
         // Update notification badge periodically
         updateNotificationBadge(btnNotification);
         
         userSection.add(userProfilePanel);
+        userSection.add(btnDarkMode);
         userSection.add(btnNotification);
         
         // Combine sections with better spacing
@@ -186,12 +454,12 @@ public class ClientUI extends JFrame {
         JPanel centerPanel = new JPanel(new BorderLayout());
         centerPanel.setOpaque(false);
         
-        // Books grid panel
-        JPanel booksGridPanel = new JPanel(new GridLayout(0, 4, 20, 20));
+        // Books grid panel - save as instance variable
+        booksGridPanel = new JPanel(new GridLayout(0, 6, 15, 15));
         booksGridPanel.setBackground(new Color(248, 249, 250));
         booksGridPanel.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
         
-        // Scroll pane for books
+        // Scroll pane for books - with smooth scrolling enabled
         JScrollPane scrollPane = new JScrollPane(booksGridPanel);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
@@ -199,12 +467,135 @@ public class ClientUI extends JFrame {
         scrollPane.setOpaque(false);
         scrollPane.getViewport().setOpaque(false);
         
+        // Configure smooth scrolling to reduce jerkiness
+        configureSmoothScrolling(scrollPane);
+        
         centerPanel.add(scrollPane, BorderLayout.CENTER);
         
+        // Pagination panel
+        JPanel paginationPanel = createPaginationPanel();
+        centerPanel.add(paginationPanel, BorderLayout.SOUTH);
+        
         // Load books initially
-        loadBooksGrid(booksGridPanel);
+        loadBooksGrid();
         
         return centerPanel;
+    }
+    
+    private JPanel createPaginationPanel() {
+        JPanel paginationPanel = new JPanel(new BorderLayout());
+        paginationPanel.setOpaque(false);
+        paginationPanel.setBorder(BorderFactory.createEmptyBorder(15, 0, 15, 0));
+        
+        // Navigation buttons panel
+        JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        navPanel.setOpaque(false);
+        
+        // Create pagination buttons with modern style
+        btnFirstPage = createPaginationButton("<<", "Trang đầu");
+        btnPrevPage = createPaginationButton("<", "Trang trước");
+        btnNextPage = createPaginationButton(">", "Trang sau");
+        btnLastPage = createPaginationButton(">>", "Trang cuối");
+        
+        // Page info label
+        lblPageInfo = new JLabel("Trang 1 / 1");
+        lblPageInfo.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblPageInfo.setForeground(new Color(52, 73, 94));
+        lblPageInfo.setBorder(BorderFactory.createEmptyBorder(0, 15, 0, 15));
+        
+        // Add event listeners for pagination buttons
+        btnFirstPage.addActionListener(e -> navigateToPage(1));
+        btnPrevPage.addActionListener(e -> navigateToPage(currentPage - 1));
+        btnNextPage.addActionListener(e -> navigateToPage(currentPage + 1));
+        btnLastPage.addActionListener(e -> navigateToPage(totalPages));
+        
+        // Add components to navigation panel
+        navPanel.add(btnFirstPage);
+        navPanel.add(btnPrevPage);
+        navPanel.add(lblPageInfo);
+        navPanel.add(btnNextPage);
+        navPanel.add(btnLastPage);
+        
+        paginationPanel.add(navPanel, BorderLayout.CENTER);
+        
+        // Items info panel
+        JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        infoPanel.setOpaque(false);
+        
+        JLabel lblItemsInfo = new JLabel();
+        lblItemsInfo.setFont(new Font("Segoe UI", Font.ITALIC, 12));
+        lblItemsInfo.setForeground(new Color(108, 117, 125));
+        
+        infoPanel.add(lblItemsInfo);
+        paginationPanel.add(infoPanel, BorderLayout.EAST);
+        
+        return paginationPanel;
+    }
+    
+    private JButton createPaginationButton(String text, String tooltip) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        button.setBackground(new Color(52, 152, 219));
+        button.setForeground(Color.WHITE);
+        button.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setToolTipText(tooltip);
+        button.setPreferredSize(new Dimension(40, 32));
+        
+        // Hover effect
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                if (button.isEnabled()) {
+                    button.setBackground(new Color(41, 128, 185));
+                }
+            }
+            
+            @Override
+            public void mouseExited(MouseEvent e) {
+                if (button.isEnabled()) {
+                    button.setBackground(new Color(52, 152, 219));
+                }
+            }
+        });
+        
+        return button;
+    }
+    
+    private void navigateToPage(int page) {
+        if (page < 1 || page > totalPages) return;
+        
+        currentPage = page;
+        loadBooksGrid();
+        updatePaginationUI();
+    }
+    
+    private void updatePaginationUI() {
+        // Update page info
+        lblPageInfo.setText("Trang " + currentPage + " / " + totalPages);
+        
+        // Update button states
+        btnFirstPage.setEnabled(currentPage > 1);
+        btnPrevPage.setEnabled(currentPage > 1);
+        btnNextPage.setEnabled(currentPage < totalPages);
+        btnLastPage.setEnabled(currentPage < totalPages);
+        
+        // Update button colors based on enabled state
+        updateButtonAppearance(btnFirstPage);
+        updateButtonAppearance(btnPrevPage);
+        updateButtonAppearance(btnNextPage);
+        updateButtonAppearance(btnLastPage);
+    }
+    
+    private void updateButtonAppearance(JButton button) {
+        if (button.isEnabled()) {
+            button.setBackground(new Color(52, 152, 219));
+            button.setForeground(Color.WHITE);
+        } else {
+            button.setBackground(new Color(176, 190, 197));
+            button.setForeground(new Color(127, 140, 141));
+        }
     }
     
     private JPanel createBottomPanel() {
@@ -282,11 +673,9 @@ public class ClientUI extends JFrame {
     }
     
     private void refreshBookDisplay() {
-        // Find the books grid panel and refresh it
-        JPanel centerPanel = (JPanel) ((JPanel) getContentPane()).getComponent(1);
-        JScrollPane scrollPane = (JScrollPane) centerPanel.getComponent(0);
-        JPanel booksGridPanel = (JPanel) scrollPane.getViewport().getView();
-        loadBooksGrid(booksGridPanel);
+        // Reset to page 1 when refreshing/searching
+        currentPage = 1;
+        loadBooksGrid();
     }
     
     private void setupSearchSuggestions() {
@@ -607,6 +996,7 @@ public class ClientUI extends JFrame {
         notesArea.setWrapStyleWord(true);
         JScrollPane notesScroll = new JScrollPane(notesArea);
         notesScroll.setPreferredSize(new Dimension(300, 100));
+        configureSmoothScrolling(notesScroll); // Apply smooth scrolling
         formPanel.add(notesScroll, gbc);
         
         // Button panel
@@ -720,112 +1110,232 @@ public class ClientUI extends JFrame {
         }
     }
 
-    private void loadBooksGrid(JPanel booksGridPanel) {
-        booksGridPanel.removeAll();
+
+    
+    private void loadBooksGrid() {
+        if (booksGridPanel == null) return;
         
-        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:C:/data/library.db?busy_timeout=30000")) {
-            // Add status column if it doesn't exist and update existing books to approved
-            try {
-                Statement stmt = conn.createStatement();
-                stmt.execute("ALTER TABLE books ADD COLUMN status TEXT DEFAULT 'approved'");
-                // Update existing books without status to approved
-                stmt.execute("UPDATE books SET status = 'approved' WHERE status IS NULL OR status = 'pending'");
-            } catch (SQLException e) {
-                // Column already exists, just update existing books to approved
-                try {
-                    Statement updateStmt = conn.createStatement();
-                    updateStmt.execute("UPDATE books SET status = 'approved' WHERE status IS NULL OR status = 'pending'");
-                } catch (SQLException ex) {
-                    // Ignore if update fails
-                }
-            }
-            
-            // Show all books, no need to wait for approval to display
-            StringBuilder query = new StringBuilder("SELECT id, title, author, publisher, year, category, quantity, cover_image, status FROM books WHERE 1=1");
-            
-            // Add search filters (handle placeholder text)
-            String searchText = txtSearch.getText().trim();
-            if ("Nhập tên sách hoặc tác giả...".equals(searchText)) searchText = "";
-            
-            String authorText = txtAuthor.getText().trim();
-            if ("Nhập tên tác giả...".equals(authorText)) authorText = "";
-            
-            String publisherText = txtPublisher.getText().trim();
-            if ("Nhập nhà xuất bản...".equals(publisherText)) publisherText = "";
-            
-            String categoryText = cbCategory.getSelectedItem().toString();
-            
-            if (!searchText.isEmpty()) {
-                query.append(" AND (title LIKE ? OR author LIKE ? OR publisher LIKE ?)");
-            }
-            if (!authorText.isEmpty()) {
-                query.append(" AND author LIKE ?");
-            }
-            if (!publisherText.isEmpty()) {
-                query.append(" AND publisher LIKE ?");
-            }
-            if (!"Tất cả".equals(categoryText)) {
-                query.append(" AND category = ?");
-            }
-            
-            PreparedStatement ps = conn.prepareStatement(query.toString());
-            int paramIndex = 1;
-            
-            if (!searchText.isEmpty()) {
-                String searchPattern = "%" + searchText + "%";
-                ps.setString(paramIndex++, searchPattern);
-                ps.setString(paramIndex++, searchPattern);
-                ps.setString(paramIndex++, searchPattern);
-            }
-            if (!authorText.isEmpty()) {
-                ps.setString(paramIndex++, "%" + authorText + "%");
-            }
-            if (!publisherText.isEmpty()) {
-                ps.setString(paramIndex++, "%" + publisherText + "%");
-            }
-            if (!"Tất cả".equals(categoryText)) {
-                ps.setString(paramIndex++, categoryText);
-            }
-            
-            ResultSet rs = ps.executeQuery();
-            
-            while (rs.next()) {
-                String bookId = rs.getString("id");
-                String title = rs.getString("title");
-                String author = rs.getString("author");
-                String category = rs.getString("category");
-                int quantity = rs.getInt("quantity");
-                String coverImage = rs.getString("cover_image");
-                String status = rs.getString("status");
-                
-                // Create panel for all books - no status restriction for display
-                JPanel bookPanel = createBookPanelWithStatus(bookId, title, author, category, quantity, coverImage, status);
-                booksGridPanel.add(bookPanel);
-            }
-            
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Lỗi tải sách: " + ex.getMessage());
+        // Show loading dialog if available
+        LoadingDialog loadingDialog = null;
+        if (taskManager != null) {
+            loadingDialog = LoadingDialog.show(this, "Đang tải danh sách sách");
         }
         
-        booksGridPanel.revalidate();
-        booksGridPanel.repaint();
+        final LoadingDialog finalLoadingDialog = loadingDialog;
+        
+        // Execute in background
+        SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                loadBooksDirectly();
+                return null;
+            }
+            
+            @Override
+            protected void done() {
+                if (finalLoadingDialog != null) {
+                    finalLoadingDialog.hideLoading();
+                }
+                
+                // Update UI
+                updatePaginationUI();
+                booksGridPanel.revalidate();
+                booksGridPanel.repaint();
+            }
+        };
+        
+        worker.execute();
     }
     
+    /**
+     * Load books directly (can be called from background thread)
+     */
+    private void loadBooksDirectly() {
+        SwingUtilities.invokeLater(() -> booksGridPanel.removeAll());
+        
+        try {
+            if (dbManager != null) {
+                dbManager.executeWithConnection(this::loadBooksFromDatabase);
+            } else {
+                // Fallback to direct connection
+                try (Connection conn = DriverManager.getConnection("jdbc:sqlite:C:/data/library.db?busy_timeout=30000")) {
+                    loadBooksFromDatabase(conn);
+                }
+            }
+        } catch (SQLException e) {
+            SwingUtilities.invokeLater(() -> {
+                JOptionPane.showMessageDialog(this, 
+                    "Lỗi tải sách: " + e.getMessage(), 
+                    "Lỗi", 
+                    JOptionPane.ERROR_MESSAGE);
+            });
+        }
+    }
+    
+    /**
+     * Load books from database connection
+     */
+    private void loadBooksFromDatabase(Connection conn) throws SQLException {
+        try {
+            Statement stmt = conn.createStatement();
+            stmt.execute("ALTER TABLE books ADD COLUMN status TEXT DEFAULT 'approved'");
+            // Update existing books without status to approved
+            stmt.execute("UPDATE books SET status = 'approved' WHERE status IS NULL OR status = 'pending'");
+        } catch (SQLException e) {
+            // Column already exists, just update existing books to approved
+            try {
+                Statement updateStmt = conn.createStatement();
+                updateStmt.execute("UPDATE books SET status = 'approved' WHERE status IS NULL OR status = 'pending'");
+            } catch (SQLException ex) {
+                // Ignore if update fails
+            }
+        }
+        
+        // Build base query for counting total items
+        StringBuilder baseQuery = new StringBuilder("SELECT COUNT(*) FROM books WHERE 1=1");
+        
+        // Add search filters (handle placeholder text)
+        String searchText = txtSearch.getText().trim();
+        if ("Nhập tên sách hoặc tác giả...".equals(searchText)) searchText = "";
+        
+        String authorText = txtAuthor.getText().trim();
+        if ("Nhập tên tác giả...".equals(authorText)) authorText = "";
+        
+        String publisherText = txtPublisher.getText().trim();
+        if ("Nhập nhà xuất bản...".equals(publisherText)) publisherText = "";
+        
+        String categoryText = cbCategory.getSelectedItem().toString();
+        
+        if (!searchText.isEmpty()) {
+            baseQuery.append(" AND (title LIKE ? OR author LIKE ? OR publisher LIKE ?)");
+        }
+        if (!authorText.isEmpty()) {
+            baseQuery.append(" AND author LIKE ?");
+        }
+        if (!publisherText.isEmpty()) {
+            baseQuery.append(" AND publisher LIKE ?");
+        }
+        if (!"Tất cả".equals(categoryText)) {
+            baseQuery.append(" AND category = ?");
+        }
+        
+        // First, count total items
+        PreparedStatement countPs = conn.prepareStatement(baseQuery.toString());
+        int paramIndex = 1;
+        
+        if (!searchText.isEmpty()) {
+            String searchPattern = "%" + searchText + "%";
+            countPs.setString(paramIndex++, searchPattern);
+            countPs.setString(paramIndex++, searchPattern);
+            countPs.setString(paramIndex++, searchPattern);
+        }
+        if (!authorText.isEmpty()) {
+            countPs.setString(paramIndex++, "%" + authorText + "%");
+        }
+        if (!publisherText.isEmpty()) {
+            countPs.setString(paramIndex++, "%" + publisherText + "%");
+        }
+        if (!"Tất cả".equals(categoryText)) {
+            countPs.setString(paramIndex++, categoryText);
+        }
+        
+        ResultSet countRs = countPs.executeQuery();
+        totalItems = countRs.getInt(1);
+        totalPages = (int) Math.ceil((double) totalItems / itemsPerPage);
+        countRs.close();
+        countPs.close();
+        
+        // Ensure current page is valid
+        if (currentPage > totalPages && totalPages > 0) {
+            currentPage = totalPages;
+        } else if (currentPage < 1) {
+            currentPage = 1;
+        }
+        
+        // Build query for actual data with pagination
+        StringBuilder dataQuery = new StringBuilder("SELECT id, title, author, publisher, year, category, quantity, cover_image, status FROM books WHERE 1=1");
+        
+        if (!searchText.isEmpty()) {
+            dataQuery.append(" AND (title LIKE ? OR author LIKE ? OR publisher LIKE ?)");
+        }
+        if (!authorText.isEmpty()) {
+            dataQuery.append(" AND author LIKE ?");
+        }
+        if (!publisherText.isEmpty()) {
+            dataQuery.append(" AND publisher LIKE ?");
+        }
+        if (!"Tất cả".equals(categoryText)) {
+            dataQuery.append(" AND category = ?");
+        }
+        
+        // Add pagination
+        dataQuery.append(" ORDER BY id LIMIT ? OFFSET ?");
+        
+        PreparedStatement dataPs = conn.prepareStatement(dataQuery.toString());
+        paramIndex = 1;
+        
+        if (!searchText.isEmpty()) {
+            String searchPattern = "%" + searchText + "%";
+            dataPs.setString(paramIndex++, searchPattern);
+            dataPs.setString(paramIndex++, searchPattern);
+            dataPs.setString(paramIndex++, searchPattern);
+        }
+        if (!authorText.isEmpty()) {
+            dataPs.setString(paramIndex++, "%" + authorText + "%");
+        }
+        if (!publisherText.isEmpty()) {
+            dataPs.setString(paramIndex++, "%" + publisherText + "%");
+        }
+        if (!"Tất cả".equals(categoryText)) {
+            dataPs.setString(paramIndex++, categoryText);
+        }
+        
+        // Set pagination parameters
+        dataPs.setInt(paramIndex++, itemsPerPage);
+        dataPs.setInt(paramIndex++, (currentPage - 1) * itemsPerPage);
+        
+        ResultSet rs = dataPs.executeQuery();
+        
+        while (rs.next()) {
+            String bookId = rs.getString("id");
+            String title = rs.getString("title");
+            String author = rs.getString("author");
+            String category = rs.getString("category");
+            int quantity = rs.getInt("quantity");
+            String coverImage = rs.getString("cover_image");
+            String status = rs.getString("status");
+            
+            // Create panel for all books - no status restriction for display
+            JPanel bookPanel = createBookPanelWithStatus(bookId, title, author, category, quantity, coverImage, status);
+            SwingUtilities.invokeLater(() -> booksGridPanel.add(bookPanel));
+        }
+        
+        rs.close();
+        dataPs.close();
+        
+        // Update pagination UI on EDT
+        SwingUtilities.invokeLater(() -> {
+            updatePaginationUI();
+            booksGridPanel.revalidate();
+            booksGridPanel.repaint();
+        });
+    }
+
     private JPanel createBookPanelWithStatus(String bookId, String title, String author, String category, int quantity, String coverImage, String status) {
         JPanel bookPanel = new JPanel();
         bookPanel.setLayout(new BoxLayout(bookPanel, BoxLayout.Y_AXIS));
         bookPanel.setBackground(Color.WHITE);
         bookPanel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(220, 220, 220), 1),
-            BorderFactory.createEmptyBorder(15, 15, 15, 15)
+            BorderFactory.createEmptyBorder(8, 8, 8, 8)
         ));
-        bookPanel.setPreferredSize(new Dimension(250, 350));
+        bookPanel.setPreferredSize(new Dimension(200, 300));
         
-        // Book image panel
+        // Book image panel - compact design with no distortion
         JPanel imagePanel = new JPanel(new BorderLayout());
-        imagePanel.setPreferredSize(new Dimension(200, 180));
-        imagePanel.setBackground(new Color(240, 240, 240));
-        imagePanel.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
+        imagePanel.setPreferredSize(new Dimension(160, 140));
+        imagePanel.setBackground(new Color(248, 249, 250));
+        imagePanel.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220), 1));
         
         JLabel imageLabel;
         if (coverImage != null && !coverImage.trim().isEmpty()) {
@@ -836,10 +1346,23 @@ public class ClientUI extends JFrame {
                 
                 // Wait for image to load completely
                 if (originalIcon.getIconWidth() > 0 && originalIcon.getIconHeight() > 0) {
-                    // Scale image to fit perfectly
-                    Image scaledImage = originalIcon.getImage().getScaledInstance(180, 160, Image.SCALE_SMOOTH);
+                    // Calculate dimensions to maintain aspect ratio without distortion
+                    int maxWidth = 150;
+                    int maxHeight = 130;
+                    int originalWidth = originalIcon.getIconWidth();
+                    int originalHeight = originalIcon.getIconHeight();
+                    
+                    // Calculate scale factor to fit within bounds without distortion
+                    double scaleWidth = (double) maxWidth / originalWidth;
+                    double scaleHeight = (double) maxHeight / originalHeight;
+                    double scale = Math.min(scaleWidth, scaleHeight);
+                    
+                    int scaledWidth = (int) (originalWidth * scale);
+                    int scaledHeight = (int) (originalHeight * scale);
+                    
+                    Image scaledImage = originalIcon.getImage().getScaledInstance(scaledWidth, scaledHeight, Image.SCALE_SMOOTH);
                     imageLabel = new JLabel(new ImageIcon(scaledImage), SwingConstants.CENTER);
-                    imageLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+                    imageLabel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
                 } else {
                     // If image loading fails, show category name
                     String bookIcon = getBookIcon(category);
@@ -1089,6 +1612,7 @@ public class ClientUI extends JFrame {
         
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setBorder(BorderFactory.createLineBorder(new Color(255, 140, 0), 2));
+        configureSmoothScrolling(scrollPane); // Apply smooth scrolling
         
         // Button panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -1307,6 +1831,7 @@ public class ClientUI extends JFrame {
         
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setBorder(BorderFactory.createLineBorder(new Color(40, 167, 69), 2));
+        configureSmoothScrolling(scrollPane); // Apply smooth scrolling
         
         // Button panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -1445,32 +1970,7 @@ public class ClientUI extends JFrame {
             System.err.println("Error recording activity: " + e.getMessage());
         }
     }
-    
-    private JPanel createActivityItem(String activity, int index) {
-        JPanel item = new JPanel(new BorderLayout(10, 0));
-        item.setOpaque(false);
-        item.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
-        
-        // Index label
-        JLabel indexLabel = new JLabel(String.valueOf(index));
-        indexLabel.setPreferredSize(new Dimension(30, 30));
-        indexLabel.setBackground(new Color(40, 167, 69));
-        indexLabel.setForeground(Color.WHITE);
-        indexLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        indexLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        indexLabel.setOpaque(true);
-        indexLabel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        
-        // Activity text
-        JLabel activityLabel = new JLabel(activity);
-        activityLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        activityLabel.setForeground(new Color(33, 37, 41));
-        
-        item.add(indexLabel, BorderLayout.WEST);
-        item.add(activityLabel, BorderLayout.CENTER);
-        
-        return item;
-    }
+
 
     private void showBorrowRequestsDialog() {
         if (userId == -1) {
@@ -1580,6 +2080,7 @@ public class ClientUI extends JFrame {
             
             JScrollPane scrollPane = new JScrollPane(table);
             scrollPane.setBorder(BorderFactory.createLineBorder(new Color(0, 123, 255), 2));
+            configureSmoothScrolling(scrollPane); // Apply smooth scrolling
             
             // Info panel
             JPanel infoPanel = new JPanel(new GridLayout(1, 3, 15, 0));
@@ -1721,13 +2222,13 @@ public class ClientUI extends JFrame {
         JPanel contentPanel = new JPanel(new BorderLayout(20, 0));
         contentPanel.setOpaque(false);
         
-        // Left panel - Book image
+        // Left panel - Book image (compact with no distortion)
         JPanel imagePanel = new JPanel(new BorderLayout());
-        imagePanel.setPreferredSize(new Dimension(250, 350));
+        imagePanel.setPreferredSize(new Dimension(230, 320));
         imagePanel.setBackground(Color.WHITE);
         imagePanel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(0, 123, 255), 2),
-            BorderFactory.createEmptyBorder(15, 15, 15, 15)
+            BorderFactory.createEmptyBorder(8, 8, 8, 8)
         ));
         
         JLabel bookImageLabel;
@@ -1737,7 +2238,21 @@ public class ClientUI extends JFrame {
                 ImageIcon originalIcon = new ImageIcon(imageUrl);
                 
                 if (originalIcon.getIconWidth() > 0 && originalIcon.getIconHeight() > 0) {
-                    Image scaledImage = originalIcon.getImage().getScaledInstance(220, 300, Image.SCALE_SMOOTH);
+                    // Calculate dimensions to maintain aspect ratio without distortion
+                    int maxWidth = 214;  // 230 - 16 (8px padding each side)
+                    int maxHeight = 304; // 320 - 16 (8px padding each side)
+                    int originalWidth = originalIcon.getIconWidth();
+                    int originalHeight = originalIcon.getIconHeight();
+                    
+                    // Calculate scale factor to fit within bounds without distortion
+                    double scaleWidth = (double) maxWidth / originalWidth;
+                    double scaleHeight = (double) maxHeight / originalHeight;
+                    double scale = Math.min(scaleWidth, scaleHeight);
+                    
+                    int scaledWidth = (int) (originalWidth * scale);
+                    int scaledHeight = (int) (originalHeight * scale);
+                    
+                    Image scaledImage = originalIcon.getImage().getScaledInstance(scaledWidth, scaledHeight, Image.SCALE_SMOOTH);
                     bookImageLabel = new JLabel(new ImageIcon(scaledImage), SwingConstants.CENTER);
                 } else {
                     String bookIcon = getBookIcon(category);
@@ -1812,6 +2327,7 @@ public class ClientUI extends JFrame {
         JScrollPane descScrollPane = new JScrollPane(descArea);
         descScrollPane.setPreferredSize(new Dimension(400, 100));
         descScrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
+        configureSmoothScrolling(descScrollPane); // Apply smooth scrolling
         
         // Add components to info panel
         infoPanel.add(titleLabel);
@@ -2015,13 +2531,15 @@ public class ClientUI extends JFrame {
             if (userId != -1) {
                 int unreadCount = NotificationUI.getUnreadNotificationCount(userId);
                 if (unreadCount > 0) {
-                    btnNotification.setText("Thông báo (" + unreadCount + ")");
-                    btnNotification.setPreferredSize(new Dimension(70, 40));
+                    btnNotification.setText("🔔 Thông báo (" + unreadCount + ")");
+                    btnNotification.setPreferredSize(new Dimension(150, 40));
+                    btnNotification.setBackground(new Color(231, 76, 60)); // Red for unread notifications
                     btnNotification.setToolTipText("Bạn có " + unreadCount + " thông báo chưa đọc");
                 } else {
-                    btnNotification.setText("Thông báo");
-                    btnNotification.setPreferredSize(new Dimension(50, 40));
-                    btnNotification.setToolTipText("Thông báo");
+                    btnNotification.setText("🔔 Thông báo");
+                    btnNotification.setPreferredSize(new Dimension(120, 40));
+                    btnNotification.setBackground(new Color(255, 140, 0)); // Orange for no notifications
+                    btnNotification.setToolTipText("Xem thông báo của bạn");
                 }
             }
         });
@@ -2453,4 +2971,6 @@ public class ClientUI extends JFrame {
             }
         });
     }
+    
+
 }

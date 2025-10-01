@@ -15,6 +15,10 @@ public class BookManagerUI extends JFrame {
     private JTextArea txtDescription;
     private JComboBox<String> cbCategory;
     private JLabel lblCount, lblImagePreview;
+    
+    // Resource managers để giữ BookManager ổn định
+    private DatabaseManager dbManager;
+    private BackgroundTaskManager taskManager;
 
     private static final String[] CATEGORIES = {
         "Văn học – Tiểu thuyết",
@@ -30,6 +34,9 @@ public class BookManagerUI extends JFrame {
     };
 
     public BookManagerUI() {
+        // Khởi tạo resource managers trước
+        initializeResourceManagers();
+        
         setTitle("Quản lý sách");
         setMinimumSize(new Dimension(1000, 650));
         setPreferredSize(new Dimension(1300, 800));
@@ -906,6 +913,55 @@ public class BookManagerUI extends JFrame {
                 JOptionPane.showMessageDialog(this, "Lỗi xóa sách: " + ex.getMessage());
             }
         }
+    }
+
+    /**
+     * Khởi tạo resource managers
+     */
+    private void initializeResourceManagers() {
+        try {
+            dbManager = DatabaseManager.getInstance();
+            taskManager = BackgroundTaskManager.getInstance();
+            System.out.println("BookManager resource managers initialized");
+        } catch (Exception e) {
+            System.err.println("Failed to initialize BookManager resources: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Execute operations với loading dialog
+     */
+    public void executeWithLoading(String message, Runnable task) {
+        if (taskManager != null) {
+            taskManager.executeWithLoading(
+                this,
+                message,
+                () -> {
+                    task.run();
+                    return null;
+                },
+                result -> {
+                    // Success callback
+                },
+                error -> {
+                    SwingUtilities.invokeLater(() -> {
+                        JOptionPane.showMessageDialog(this,
+                            "Lỗi: " + error.getMessage(),
+                            "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    });
+                }
+            );
+        } else {
+            // Fallback
+            task.run();
+        }
+    }
+    
+    /**
+     * Load books với loading dialog
+     */
+    private void loadBooksWithLoading() {
+        executeWithLoading("Đang tải danh sách sách...", this::loadBooks);
     }
 
     public static void main(String[] args) {
