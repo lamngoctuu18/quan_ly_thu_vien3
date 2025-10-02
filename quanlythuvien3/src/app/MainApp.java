@@ -17,19 +17,30 @@ import java.sql.ResultSet;
 
 public class MainApp {
     public static void main(String[] args) {
-        // Kiểm tra server đã chạy chưa, nếu chưa thì mới khởi động
-        try (ServerSocket ss = new ServerSocket(12345)) {
-            ss.close();
-            // Nếu tạo được ServerSocket thì server chưa chạy, khởi động server
+        // Kiểm tra server đã chạy chưa bằng cách thử kết nối (connect) thay vì bind cổng.
+        // Lợi ích: không chiếm cổng tạm thời và tránh race condition nhỏ khi bind/close.
+        boolean serverRunning = false;
+        try (Socket probe = new Socket()) {
+            // Thử kết nối tới localhost:12345 với timeout ngắn (500ms)
+            probe.connect(new java.net.InetSocketAddress("localhost", 12345), 500);
+            serverRunning = true;
+        } catch (java.io.IOException e) {
+            // Không kết nối được => server chưa chạy
+            serverRunning = false;
+        }
+
+        if (serverRunning) {
+            System.out.println("[MainApp] Server detected on localhost:12345 — will not start a new server.");
+        } else {
+            System.out.println("[MainApp] No server detected on localhost:12345 — starting LibraryServer in background...");
+            // Khởi động server trong thread riêng để không chặn UI
             new Thread(() -> {
                 try {
                     LibraryServer.main(null);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-            }).start();
-        } catch (Exception ex) {
-            // Nếu không tạo được ServerSocket thì server đã chạy
+            }, "LibraryServer-Starter").start();
         }
 
         // Hiển thị giao diện đăng nhập
