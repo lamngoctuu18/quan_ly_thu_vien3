@@ -33,11 +33,57 @@ Hệ thống quản lý sách - thư viện qua mạng được xây dựng nh�
 - Hỗ trợ phân quyền (admin, user) để đảm bảo bảo mật và hiệu quả vận hành.
 - Cung cấp giao diện hiện đại, dễ sử dụng, phù hợp với nhiều đối tượng người dùng.
 
-### 🖥️ **Chức năng của Server**
+### �️ Cấu trúc file dự án
+Dưới đây là sơ đồ cấu trúc file chính của dự án (phiên bản rút gọn, các file .class và tài nguyên ảnh đã được bỏ bớt để dễ đọc):
+
+```text
+quan_ly_thu_vien3/
+├─ README.md                          # Tài liệu hướng dẫn & mô tả dự án
+├─ *.jpg / assets                     # Ảnh minh hoạ giao diện (login, dashboards...)
+├─ bin/                               # Các .class đã biên dịch (bản build)
+│  └─ ...
+├─ src/
+│  ├─ app/
+│  │  └─ MainApp.java                 # Entry point cho client (giao diện)
+│  ├─ client/
+│  │  ├─ AdminUI.java                 # Giao diện admin chính
+│  │  ├─ ClientUI.java                # Giao diện người dùng
+│  │  ├─ BookManagerUI.java           # Quản lý sách (thêm/sửa/xóa)
+│  │  ├─ BorrowManagementUI.java     # Quản lý mượn/trả (admin)
+│  │  ├─ BorrowListUI.java            # Danh sách sách đang mượn (user)
+│  │  ├─ UserManagerUI.java           # Quản lý người dùng (admin)
+│  │  ├─ UserProfileUI.java           # Hồ sơ người dùng (avatar, chỉnh sửa)
+│  │  └─ ...                          # LoadingDialog, DarkModeManager, utils
+│  ├─ dao/
+│  │  ├─ BookDAO.java
+│  │  ├─ BorrowDAO.java
+│  │  └─ UserDAO.java                 # DAO: tương tác DB (SQLite)
+│  ├─ model/
+│  │  ├─ Book.java
+│  │  ├─ Borrow.java
+│  │  └─ User.java
+│  └─ server/
+│     ├─ LibraryServer.java           # Server socket (listener)
+│     ├─ ClientHandler.java           # Xử lý request từ client
+│     ├─ InitDatabase.java            # Script tạo/seed DB
+│     └─ migration/                    # (migrations / helpers)
+│        └─ AddExpectedReturnDateColumn.java
+└─ server/                            # Các tiện ích chạy trực tiếp trên server
+    ├─ CreateBorrowRequestsTable.java
+    ├─ AddSampleBooks.java
+    └─ AddSampleBorrowRequests.java
+```
+
+Ghi chú ngắn:
+- `src/` chứa mã nguồn Java theo nhóm chức năng: `app`, `client`, `dao`, `model`, `server`.
+- `InitDatabase.java` và các script trong `src/server` dùng để tạo schema và seed dữ liệu (file SQLite mặc định: `C:/data/library.db`).
+- `bin/` chứa các tệp .class khi bạn build thủ công bằng `javac` (không cần commit các file build lên Git).
+
+
+### �🖥️ **Chức năng của Server**
 - 🗄️ Quản lý dữ liệu người dùng, sách, mượn/trả, hoạt động.
 - 🔗 Xử lý các yêu cầu từ Client: đăng nhập, đăng ký, tìm kiếm, mượn/trả sách, quản lý yêu thích, lịch sử hoạt động.
-🔒 Đảm bảo an toàn và đồng bộ dữ liệu.
-
+- 🔒 Đảm bảo an toàn và đồng bộ dữ liệu.
 - ✅ Ưu tiên hiển thị `expected_return_date` từ `borrow_requests` khi có (hỗ trợ due-date chính xác).
 - ⏱️ Job định kỳ (scheduler) để tự động đánh dấu quá hạn, gửi nhắc trả và cập nhật trạng thái.
 - 🔐 Audit log cho các hành động quan trọng (mượn/trả, duyệt yêu cầu, thay đổi user) kèm admin_id và timestamp.
