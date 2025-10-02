@@ -33,7 +33,7 @@ Hệ thống quản lý sách - thư viện qua mạng được xây dựng nh�
 - Hỗ trợ phân quyền (admin, user) để đảm bảo bảo mật và hiệu quả vận hành.
 - Cung cấp giao diện hiện đại, dễ sử dụng, phù hợp với nhiều đối tượng người dùng.
 
-### �️ Cấu trúc file dự án
+### Cấu trúc file dự án
 Dưới đây là sơ đồ cấu trúc file chính của dự án (phiên bản rút gọn, các file .class và tài nguyên ảnh đã được bỏ bớt để dễ đọc):
 
 ```text
