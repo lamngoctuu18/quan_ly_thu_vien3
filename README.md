@@ -34,18 +34,42 @@ Hệ thống quản lý sách - thư viện qua mạng được xây dựng nh�
 - Cung cấp giao diện hiện đại, dễ sử dụng, phù hợp với nhiều đối tượng người dùng.
 
 ### 🖥️ **Chức năng của Server**
-- 🗄️ Quản lý dữ liệu người dùng, sách, mượn/trả, hoạt động.
-- 🔗 Xử lý các yêu cầu từ Client: đăng nhập, đăng ký, tìm kiếm, mượn/trả sách, quản lý yêu thích, lịch sử hoạt động.
-- 🔒 Đảm bảo an toàn và đồng bộ dữ liệu.
+<!-- New server features -->
+- 🆕 Hỗ trợ `borrow_requests` và `expected_return_date`:
+    - Server trả về hạn trả ưu tiên theo `borrow_request.expected_return_date` (SQL đã sử dụng COALESCE để chọn giá trị gần nhất hoặc fallback tính từ `borrow_date`).
+    - Có script migration để thêm cột `expected_return_date` và cập nhật dữ liệu hiện có (`AddExpectedReturnDateColumn`, `FixBorrowRecords`).
+- 🧾 Tạo/ghi nhận mẫu dữ liệu: các tiện ích server tiện lợi để chèn dữ liệu mẫu (ví dụ `AddSampleBooks`, `AddSampleBorrowRequests`).
+- 🔁 Giao tiếp ổn định TCP socket qua `LibraryServer` / `ClientHandler` để xử lý nhiều client đồng thời.
+- 🧰 Các công cụ quản trị cơ sở dữ liệu: `InitDatabase`, `CreateBorrowRequestsTable` để khởi tạo DB và cấu trúc bảng an toàn.
+- �️ Hỗ trợ xác thực và phân quyền cơ bản (admin/user) ngay ở lớp server; có hooks để mở rộng bảo mật (hash mật khẩu, OTP recovery flow trong `MainApp`).
 
-### 👤 **Chức năng của Client**
-- 🔑 Đăng nhập, đăng ký tài khoản.
-- 🔍 Tìm kiếm sách, xem thông tin chi tiết, mượn/trả sách.
-- ❤️ Quản lý sách yêu thích, xem lịch sử hoạt động, hóa đơn mượn trả.
+
+<!-- New client features -->
+- 🌓 Dark Mode toàn diện (giao diện Client & Admin) với `DarkModeManager` và component base `DarkModeAwareComponent` để tự động áp dụng theme.
+- �️ Avatar người dùng và preview ảnh bìa sách: hiển thị avatar trong header/profile và preview cover trong `BookManagerUI` / `UserProfileUI`.
+- � Ngăn tạo yêu cầu mượn tự động: sửa luồng tạo `borrow_request` để chỉ lưu khi người dùng ấn nút "Gửi đăng ký"/"Lưu" (không còn lưu khi đóng dialog/hủy).
+- 🔔 Thống báo & logs: `NotificationUI` hiển thị thông báo (mượn/trả, duyệt yêu cầu).
+- � Quản lý mượn/trả (admin): `BorrowManagementUI` có:
+    - Thẻ số liệu (cards), biểu đồ tháng (scale theo max), panel hoạt động gần đây.
+    - Fix tương thích Java (loại bỏ String.repeat), và cải thiện hiển thị (fonts, gradients).
+- 📋 `BorrowRequestManagerUI`: xử lý, tìm kiếm và duyệt các yêu cầu mượn từ client.
+- 🧭 UI tiện ích: `AdminLauncher` (loading + theme), `ModernSidebarButton`, `ThemeSelector` để thay đổi sidebar theme, `LoadingDialog`/`LoadingUtils` cho thao tác nặng.
+- 🧑‍💻 UX nâng cao: phím tắt Enter/Esc trong form chỉnh sửa sách, dialog mở rộng với scroll, responsive layout (GroupLayout/GridBagLayout).
+
 - 🛠️ Quản lý người dùng (dành cho admin).
+<!-- New system-level features -->
+- 🔄 Background & stability:
+    - `BackgroundTaskManager` để chạy tác vụ dài không block UI (SwingWorker + ExecutorService).
+    - `KeepAliveManager` / `SystemTimeoutManager` để giữ kết nối DB/ứng dụng ổn định, tránh timeout.
+- 🧪 Migration & maintenance:
+    - Scripts tiện ích để migrate DB, cập nhật schema và seed sample data (`InitDatabase`, `UpdateDatabase`, `AddExpectedReturnDateColumn`).
+- ♻️ Tương thích & triage lỗi:
+    - Sửa các vấn đề tương thích Java (ví dụ thay vì `String.repeat` sử dụng `StringBuilder`), sửa `<>` diamond issue trong anonymous classes.
+- 📈 Thống kê & báo cáo:
+    - Dashboard/Realtime stats (cards) và textual charts trong `BorrowManagementUI` giúp admin nhìn tổng quan nhanh.
+- 🔧 Công cụ hỗ trợ phát triển:
+    - `DatabaseManager` connection-pool, `AvatarDatabaseSetup` để tạo test users, `FixBorrowRecords` để xử lý dữ liệu cũ.
 
-### ⚙️ **Chức năng hệ thống**
-- 📚 Quản lý sách, người dùng, hoạt động mượn/trả, yêu thích.
 - 🛡️ Phân quyền người dùng (admin, user).
 - 🖼️ Giao diện thân thiện, dễ sử dụng, sinh động với icon và màu sắc.
 
