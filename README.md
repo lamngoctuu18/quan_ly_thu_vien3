@@ -62,8 +62,7 @@ Hệ thống quản lý sách - thư viện qua mạng được xây dựng nh�
 ### ⚙️ **Chức năng hệ thống**
 - 📚 Quản lý sách, người dùng, hoạt động mượn/trả, yêu thích.
 - 🛡️ Phân quyền người dùng (admin, user).
-🖼️ Giao diện thân thiện, dễ sử dụng, sinh động với icon và màu sắc.
-
+- 🖼️ Giao diện thân thiện, dễ sử dụng, sinh động với icon và màu sắc.
 - 💾 Sao lưu định kỳ (scheduled DB backups) và cơ chế restore dễ dùng.
 - 📈 Health-check & monitoring (uptime, last-backup, queue length) + logs tập trung.
 - ✅ CI + unit/integration tests cho DAO, server handler và UI smoke tests.
