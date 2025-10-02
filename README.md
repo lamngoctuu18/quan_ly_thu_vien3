@@ -49,8 +49,7 @@ Hệ thống quản lý sách - thư viện qua mạng được xây dựng nh�
 - 🔑 Đăng nhập, đăng ký tài khoản.
 - 🔍 Tìm kiếm sách, xem thông tin chi tiết, mượn/trả sách.
 - ❤️ Quản lý sách yêu thích, xem lịch sử hoạt động, hóa đơn mượn trả.
-🛠️ Quản lý người dùng (dành cho admin).
-
+- 🛠️ Quản lý người dùng (dành cho admin).
 - 🌓 Dark Mode toàn bộ app (Client + Admin) — giữ màu riêng cho các nút call-to-action.
 - 🖼️ Hiển thị avatar người dùng và preview ảnh bìa sách (upload / drag & drop / thumbnail lazy-load).
 - ✋ Luồng yêu cầu mượn rõ ràng: chỉ tạo `borrow_request` khi user bấm Submit (không tự động khi đóng dialog).
