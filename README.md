@@ -82,52 +82,47 @@ Hệ thống quản lý sách - thư viện qua mạng được xây dựng nh�
 
 **Hình 1: <img src="https://img.icons8.com/ios-filled/24/000000/login-rounded-right.png"/> Giao diện đăng nhập**
 <p align="center">
-    <img width="398" height="301" alt="image" src="https://github.com/user-attachments/assets/ccf3e979-8caa-4072-9bef-500fc2d8bf28" />
+    <img width="478" height="838" alt="image" src="https://github.com/user-attachments/assets/456c4de1-5260-4c31-b35a-84f76979ffb5" />
 </p>
 
 **Hình 2: <img src="https://img.icons8.com/ios-filled/24/000000/login-rounded-right.png"/> Giao diện đăng ký**
 <p align="center">
-    <img width="468" height="381" alt="image" src="https://github.com/user-attachments/assets/ef5211ac-ef03-4bbd-aefb-25b2e784a27d" />
+   <img width="566" height="940" alt="image" src="https://github.com/user-attachments/assets/49a795a6-99e3-49bc-8d45-86b8a5a308de" />
    </p>
 
-**Hình 3: <img src="https://img.icons8.com/ios-filled/24/000000/books.png"/> Giao diện admin**
+**Hình 3: <img src="https://img.icons8.com/ios-filled/24/000000/books.png"/> Giao diện đăng nhập admin**
 <p align="center">
-   <img width="872" height="569" alt="image" src="https://github.com/user-attachments/assets/e79b3b06-ccd3-47cb-8440-ce89c974c3b0" />
+  <img width="534" height="743" alt="image" src="https://github.com/user-attachments/assets/4ad5b180-833a-499e-931c-225d3d5d785f" />
 </p>
 
 **Hình 4: <img src="https://img.icons8.com/ios-filled/24/000000/user-group-man-man.png"/> Giao diện quản lý người dùng**
 <p align="center">
-    <img width="600" alt="image" src="https://github.com/user-attachments/assets/b51d41fd-d870-439f-8d7b-97397fc1d1b3" />
+   <img width="1919" height="1018" alt="image" src="https://github.com/user-attachments/assets/0dfdb2f8-8879-4021-82d9-e5d0d1a44705" />
 </p>
 
-**Hình 5: <img src="https://img.icons8.com/ios-filled/24/000000/borrow-book.png"/> Giao diện quản lý mượn/trả sách**
+**Hình 5: <img src="https://img.icons8.com/ios-filled/24/000000/borrow-book.png"/> Giao diện quản lý admin**
 <p align="center">
-<img width="1174" height="674" alt="image" src="https://github.com/user-attachments/assets/5e95d1dc-110d-45e7-b278-e852123ab339" />
+<img width="1919" height="1020" alt="image" src="https://github.com/user-attachments/assets/cce3c268-ddc4-4dd8-80f0-3bbc58db56fc" />
 </p>
 
 **Hình 6: <img src="https://img.icons8.com/ios-filled/24/000000/borrow-book.png"/> Giao diện quản lý sách**
 <p align="center">
-    <img width="859" height="579" alt="image" src="https://github.com/user-attachments/assets/c477e656-acca-4453-b306-bb9f9f4d7ba0" />
+    <img width="1916" height="1019" alt="image" src="https://github.com/user-attachments/assets/0e8ce591-cc20-465e-9422-5c8aece5c5a1" />
 </p> 
 
-**Hình 7: <img src="https://img.icons8.com/ios-filled/24/000000/invoice.png"/> Giao diện hóa đơn mượn sách**
+**Hình 7: <img src="https://img.icons8.com/ios-filled/24/000000/invoice.png"/> Giao diện quản lý người dùng**
 <p align="center">
-   <img width="875" height="381" alt="image" src="https://github.com/user-attachments/assets/7061d8d5-ebc2-4751-bddb-0d77c26e7048" />
+  <img width="1484" height="988" alt="image" src="https://github.com/user-attachments/assets/c61007d0-9066-49d8-bd7a-57db681c05e4" />
 </p>
 
 **Hình 8: <img src="https://img.icons8.com/ios-filled/24/000000/invoice.png"/> Giao diện đăng ký mượn sách**
 <p align="center">
- <img width="570" height="507" alt="image" src="https://github.com/user-attachments/assets/52195c7a-605c-4362-95df-710694587615" />
+ <img width="1474" height="985" alt="image" src="https://github.com/user-attachments/assets/f57d1a19-a4ac-4d44-9d45-158495090f41" />
 </p>
 
-**Hình 9: <img src="https://img.icons8.com/ios-filled/24/000000/invoice.png"/> Giao diện thêm sách vào yêu thích**
+**Hình 9: <img src="https://img.icons8.com/ios-filled/24/000000/invoice.png"/> Giao diện quản lý đăng ký mượn**
 <p align="center">
-   <img width="673" height="388" alt="image" src="https://github.com/user-attachments/assets/7f37321a-66d0-4af3-9d74-57de8c82a956" />
-</p>
-
-**Hình 10: <img src="https://img.icons8.com/ios-filled/24/000000/invoice.png"/> Giao diện lịch sử hoạt động**
-<p align="center">
-   <img width="674" height="382" alt="image" src="https://github.com/user-attachments/assets/3f78437e-f2e0-4d54-aa95-5cfba6ef9d39" />
+   <img width="1485" height="982" alt="image" src="https://github.com/user-attachments/assets/f5b9bf1c-50a3-4a34-a7cc-14c4598a5845" />
 </p>
 
 ## 4. Hướng dẫn cài đặt và sử dụng
