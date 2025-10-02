@@ -80,7 +80,7 @@ Ghi chú ngắn:
 - `bin/` chứa các tệp .class khi bạn build thủ công bằng `javac` (không cần commit các file build lên Git).
 
 
-### �🖥️ **Chức năng của Server**
+### 🖥️**Chức năng của Server**
 - 🗄️ Quản lý dữ liệu người dùng, sách, mượn/trả, hoạt động.
 - 🔗 Xử lý các yêu cầu từ Client: đăng nhập, đăng ký, tìm kiếm, mượn/trả sách, quản lý yêu thích, lịch sử hoạt động.
 - 🔒 Đảm bảo an toàn và đồng bộ dữ liệu.
