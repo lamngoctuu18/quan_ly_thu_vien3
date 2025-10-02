@@ -30,8 +30,28 @@ public class ClientHandler extends Thread {
 
             out.println("WELCOME|Library TCP Server");
 
-            String request;
-            while ((request = in.readLine()) != null) {
+            String request = null;
+            // Read loop: handle normal client disconnects and socket errors gracefully
+            while (true) {
+                try {
+                    request = in.readLine();
+                    if (request == null) {
+                        // Client closed the connection cleanly
+                        System.out.println("[ClientHandler] Client disconnected: " + socket.getRemoteSocketAddress());
+                        break;
+                    }
+                } catch (java.net.SocketTimeoutException ste) {
+                    // read timeout - continue waiting (if you set SO_TIMEOUT elsewhere)
+                    continue;
+                } catch (java.net.SocketException se) {
+                    // Connection aborted or reset by peer
+                    System.out.println("[ClientHandler] SocketException from " + socket.getRemoteSocketAddress() + ": " + se.getMessage());
+                    break;
+                } catch (java.io.IOException ioe) {
+                    System.out.println("[ClientHandler] IOException while reading from " + socket.getRemoteSocketAddress() + ": " + ioe.getMessage());
+                    break;
+                }
+
                 System.out.println("REQ: " + request);
                 String[] parts = request.split("\\|", -1);
                 String cmd = parts[0];
