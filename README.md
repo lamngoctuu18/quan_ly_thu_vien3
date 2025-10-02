@@ -20,6 +20,28 @@
 
 </div>
 
+### 📌 Giao diện chức năng & file liên quan
+
+Dưới đây là danh sách các chức năng chính kèm mô tả ngắn về giao diện và file nguồn tương ứng để bạn dễ tìm và chỉnh sửa:
+
+| Chức năng | Mô tả giao diện | File (đường dẫn) |
+|---|---|---|
+| Đăng nhập | Form đăng nhập, thông báo lỗi, link quên mật khẩu | `src/app/MainApp.java` / `src/client/ClientUI.java` |
+| Đăng ký | Form đăng ký kèm upload avatar | `src/client/RegisterUI.java` |
+| Duyệt & tìm sách (Client) | Lưới/thumbnail sách, bộ lọc, pagination | `src/client/ClientUI.java` |
+| Chi tiết sách | Thông tin sách, ảnh bìa, nút mượn/yêu thích | `src/client/BookManagerUI.java` (view/edit) + detail logic in `ClientUI.java` |
+| Đăng ký mượn (Borrow Request) | Form tạo yêu cầu mượn, ghi chú, submit | `src/client/BorrowRequestManagerUI.java` |
+| Danh sách đang mượn (User) | Bảng/chi tiết mượn, hiển thị hạn trả, highlight overdue | `src/client/BorrowListUI.java` |
+| Quản lý mượn/trả (Admin) | Bảng quản lý mượn, filter, export, thống kê | `src/client/BorrowManagementUI.java` |
+| Quản lý sách (Admin) | Thêm/sửa/xóa sách, upload ảnh bìa, chỉnh số lượng | `src/client/BookManagerUI.java` |
+| Quản lý người dùng (Admin) | Danh sách user, tìm kiếm, xem chi tiết, khoá/mở | `src/client/UserManagerUI.java` & `src/client/UserDetailUI.java` |
+| Hồ sơ người dùng | Xem/đổi avatar, thông tin cá nhân, lịch sử | `src/client/UserProfileUI.java` |
+| Thông báo (Notification) | Danh sách thông báo, đánh dấu đã đọc | `src/client/NotificationUI.java` |
+| Dashboard thống kê | Cards, charts, top items, active users | `src/client/DashboardUI.java` |
+| Giao diện admin tổng quan | Sidebar, chuyển tab giữa các chức năng admin | `src/client/AdminUI.java` |
+
+Gợi ý: mở trực tiếp các file ở cột `File` nếu bạn muốn chỉnh layout hoặc đổi text/labels.
+
 ## 1. Giới thiệu hệ thống
 
 📚 **Đề tài:** Quản lý sách - thư viện qua mạng
@@ -127,55 +149,91 @@ Ghi chú ngắn:
 
 ## 3. Hình ảnh các chức năng
 
-**Hình 1: <img src="https://img.icons8.com/ios-filled/24/000000/login-rounded-right.png"/> Giao diện đăng nhập**
-<p align="center">
-    <img width="398" height="301" alt="image" src="https://github.com/user-attachments/assets/ccf3e979-8caa-4072-9bef-500fc2d8bf28" />
-</p>
+Đoạn ảnh bên dưới được sắp xếp thành gallery responsive — mỗi ảnh có tiêu đề ngắn và mô tả nhanh để tiện tham khảo. Nhấn vào ảnh để xem kích thước lớn hơn.
 
-**Hình 2: <img src="https://img.icons8.com/ios-filled/24/000000/login-rounded-right.png"/> Giao diện đăng ký**
-<p align="center">
-    <img width="468" height="381" alt="image" src="https://github.com/user-attachments/assets/ef5211ac-ef03-4bbd-aefb-25b2e784a27d" />
-   </p>
+<div style="display:flex;flex-wrap:wrap;gap:18px;justify-content:center;">
+    <figure style="width:360px;margin:0;text-align:center;font-family:Segoe UI,Arial,Helvetica, sans-serif;">
+        <a href="https://github.com/user-attachments/assets/ccf3e979-8caa-4072-9bef-500fc2d8bf28" target="_blank">
+            <img src="https://github.com/user-attachments/assets/ccf3e979-8caa-4072-9bef-500fc2d8bf28" alt="Giao diện đăng nhập" style="width:100%;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.12);"/>
+        </a>
+        <figcaption style="margin-top:8px;font-weight:600;">Đăng nhập</figcaption>
+        <small style="color:#555;display:block;margin-top:4px;">Form đăng nhập với thông báo lỗi và link quên mật khẩu.</small>
+    </figure>
 
-**Hình 3: <img src="https://img.icons8.com/ios-filled/24/000000/books.png"/> Giao diện admin**
-<p align="center">
-   <img width="872" height="569" alt="image" src="https://github.com/user-attachments/assets/e79b3b06-ccd3-47cb-8440-ce89c974c3b0" />
-</p>
+    <figure style="width:360px;margin:0;text-align:center;font-family:Segoe UI,Arial,Helvetica, sans-serif;">
+        <a href="https://github.com/user-attachments/assets/ef5211ac-ef03-4bbd-aefb-25b2e784a27d" target="_blank">
+            <img src="https://github.com/user-attachments/assets/ef5211ac-ef03-4bbd-aefb-25b2e784a27d" alt="Giao diện đăng ký" style="width:100%;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.12);"/>
+        </a>
+        <figcaption style="margin-top:8px;font-weight:600;">Đăng ký</figcaption>
+        <small style="color:#555;display:block;margin-top:4px;">Màn hình đăng ký kèm upload avatar và xác thực nhập liệu cơ bản.</small>
+    </figure>
 
-**Hình 4: <img src="https://img.icons8.com/ios-filled/24/000000/user-group-man-man.png"/> Giao diện quản lý người dùng**
-<p align="center">
-    <img width="600" alt="image" src="https://github.com/user-attachments/assets/b51d41fd-d870-439f-8d7b-97397fc1d1b3" />
-</p>
+    <figure style="width:520px;margin:0;text-align:center;font-family:Segoe UI,Arial,Helvetica, sans-serif;">
+        <a href="https://github.com/user-attachments/assets/e79b3b06-ccd3-47cb-8440-ce89c974c3b0" target="_blank">
+            <img src="https://github.com/user-attachments/assets/e79b3b06-ccd3-47cb-8440-ce89c974c3b0" alt="Giao diện admin" style="width:100%;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.12);"/>
+        </a>
+        <figcaption style="margin-top:8px;font-weight:600;">Giao diện Admin</figcaption>
+        <small style="color:#555;display:block;margin-top:4px;">Bảng điều khiển admin: sidebar, quản lý sách, người dùng và mượn/trả.</small>
+    </figure>
 
-**Hình 5: <img src="https://img.icons8.com/ios-filled/24/000000/borrow-book.png"/> Giao diện quản lý mượn/trả sách**
-<p align="center">
-<img width="1174" height="674" alt="image" src="https://github.com/user-attachments/assets/5e95d1dc-110d-45e7-b278-e852123ab339" />
-</p>
+    <figure style="width:460px;margin:0;text-align:center;font-family:Segoe UI,Arial,Helvetica, sans-serif;">
+        <a href="https://github.com/user-attachments/assets/b51d41fd-d870-439f-8d7b-97397fc1d1b3" target="_blank">
+            <img src="https://github.com/user-attachments/assets/b51d41fd-d870-439f-8d7b-97397fc1d1b3" alt="Quản lý người dùng" style="width:100%;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.12);"/>
+        </a>
+        <figcaption style="margin-top:8px;font-weight:600;">Quản lý người dùng</figcaption>
+        <small style="color:#555;display:block;margin-top:4px;">Danh sách user, tìm kiếm, sửa/khóa tài khoản và xem lịch sử mượn.</small>
+    </figure>
 
-**Hình 6: <img src="https://img.icons8.com/ios-filled/24/000000/borrow-book.png"/> Giao diện quản lý sách**
-<p align="center">
-    <img width="859" height="579" alt="image" src="https://github.com/user-attachments/assets/c477e656-acca-4453-b306-bb9f9f4d7ba0" />
-</p> 
+    <figure style="width:760px;margin:0;text-align:center;font-family:Segoe UI,Arial,Helvetica, sans-serif;">
+        <a href="https://github.com/user-attachments/assets/5e95d1dc-110d-45e7-b278-e852123ab339" target="_blank">
+            <img src="https://github.com/user-attachments/assets/5e95d1dc-110d-45e7-b278-e852123ab339" alt="Quản lý mượn/trả" style="width:100%;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.12);"/>
+        </a>
+        <figcaption style="margin-top:8px;font-weight:600;">Quản lý mượn/trả</figcaption>
+        <small style="color:#555;display:block;margin-top:4px;">Bảng theo dõi mượn — lọc, tìm kiếm, highlight quá hạn và thống kê nhanh.</small>
+    </figure>
 
-**Hình 7: <img src="https://img.icons8.com/ios-filled/24/000000/invoice.png"/> Giao diện hóa đơn mượn sách**
-<p align="center">
-   <img width="875" height="381" alt="image" src="https://github.com/user-attachments/assets/7061d8d5-ebc2-4751-bddb-0d77c26e7048" />
-</p>
+    <figure style="width:520px;margin:0;text-align:center;font-family:Segoe UI,Arial,Helvetica, sans-serif;">
+        <a href="https://github.com/user-attachments/assets/c477e656-acca-4453-b306-bb9f9f4d7ba0" target="_blank">
+            <img src="https://github.com/user-attachments/assets/c477e656-acca-4453-b306-bb9f9f4d7ba0" alt="Quản lý sách" style="width:100%;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.12);"/>
+        </a>
+        <figcaption style="margin-top:8px;font-weight:600;">Quản lý sách</figcaption>
+        <small style="color:#555;display:block;margin-top:4px;">Thêm/sửa/xóa sách, chỉnh ảnh bìa, và quản lý số lượng tồn kho.</small>
+    </figure>
 
-**Hình 8: <img src="https://img.icons8.com/ios-filled/24/000000/invoice.png"/> Giao diện đăng ký mượn sách**
-<p align="center">
- <img width="570" height="507" alt="image" src="https://github.com/user-attachments/assets/52195c7a-605c-4362-95df-710694587615" />
-</p>
+    <figure style="width:520px;margin:0;text-align:center;font-family:Segoe UI,Arial,Helvetica, sans-serif;">
+        <a href="https://github.com/user-attachments/assets/7061d8d5-ebc2-4751-bddb-0d77c26e7048" target="_blank">
+            <img src="https://github.com/user-attachments/assets/7061d8d5-ebc2-4751-bddb-0d77c26e7048" alt="Hóa đơn mượn" style="width:100%;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.12);"/>
+        </a>
+        <figcaption style="margin-top:8px;font-weight:600;">Hóa đơn mượn</figcaption>
+        <small style="color:#555;display:block;margin-top:4px;">Giao diện xem chi tiết hóa đơn mượn trả và in/luu PDF.</small>
+    </figure>
 
-**Hình 9: <img src="https://img.icons8.com/ios-filled/24/000000/invoice.png"/> Giao diện thêm sách vào yêu thích**
-<p align="center">
-   <img width="673" height="388" alt="image" src="https://github.com/user-attachments/assets/7f37321a-66d0-4af3-9d74-57de8c82a956" />
-</p>
+    <figure style="width:420px;margin:0;text-align:center;font-family:Segoe UI,Arial,Helvetica, sans-serif;">
+        <a href="https://github.com/user-attachments/assets/52195c7a-605c-4362-95df-710694587615" target="_blank">
+            <img src="https://github.com/user-attachments/assets/52195c7a-605c-4362-95df-710694587615" alt="Đăng ký mượn" style="width:100%;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.12);"/>
+        </a>
+        <figcaption style="margin-top:8px;font-weight:600;">Đăng ký mượn sách</figcaption>
+        <small style="color:#555;display:block;margin-top:4px;">Form tạo yêu cầu mượn (borrow_request) với tùy chọn ghi chú và ảnh bìa.</small>
+    </figure>
 
-**Hình 10: <img src="https://img.icons8.com/ios-filled/24/000000/invoice.png"/> Giao diện lịch sử hoạt động**
-<p align="center">
-   <img width="674" height="382" alt="image" src="https://github.com/user-attachments/assets/3f78437e-f2e0-4d54-aa95-5cfba6ef9d39" />
-</p>
+    <figure style="width:420px;margin:0;text-align:center;font-family:Segoe UI,Arial,Helvetica, sans-serif;">
+        <a href="https://github.com/user-attachments/assets/7f37321a-66d0-4af3-9d74-57de8c82a956" target="_blank">
+            <img src="https://github.com/user-attachments/assets/7f37321a-66d0-4af3-9d74-57de8c82a956" alt="Thêm vào yêu thích" style="width:100%;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.12);"/>
+        </a>
+        <figcaption style="margin-top:8px;font-weight:600;">Thêm vào yêu thích</figcaption>
+        <small style="color:#555;display:block;margin-top:4px;">Tính năng đánh dấu sách yêu thích và quản lý danh sách cá nhân.</small>
+    </figure>
+
+    <figure style="width:420px;margin:0;text-align:center;font-family:Segoe UI,Arial,Helvetica, sans-serif;">
+        <a href="https://github.com/user-attachments/assets/3f78437e-f2e0-4d54-aa95-5cfba6ef9d39" target="_blank">
+            <img src="https://github.com/user-attachments/assets/3f78437e-f2e0-4d54-aa95-5cfba6ef9d39" alt="Lịch sử hoạt động" style="width:100%;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.12);"/>
+        </a>
+        <figcaption style="margin-top:8px;font-weight:600;">Lịch sử hoạt động</figcaption>
+        <small style="color:#555;display:block;margin-top:4px;">Bản ghi các hành động của user: đăng nhập, mượn, trả, và thay đổi thông tin.</small>
+    </figure>
+
+</div>
+
 
 ## 4. Hướng dẫn cài đặt và sử dụng
 
