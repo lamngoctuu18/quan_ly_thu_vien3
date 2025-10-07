@@ -67,7 +67,13 @@ public class BackgroundTaskManager {
             return;
         }
         
-        LoadingDialog loadingDialog = LoadingDialog.show(parent, loadingMessage);
+    final JDialog[] loadingDialogRef = new JDialog[1];
+    try {
+        loadingDialogRef[0] = LoadingUtils.showLoadingDialog(parent, loadingMessage);
+    } catch (Throwable t) {
+        loadingDialogRef[0] = null;
+    }
+    final boolean haveDialog = loadingDialogRef[0] != null;
         
         SwingWorker<T, Void> worker = new SwingWorker<T, Void>() {
             @Override
@@ -78,8 +84,16 @@ public class BackgroundTaskManager {
             @Override
             protected void done() {
                 try {
-                    loadingDialog.hideLoading();
-                    
+                    if (haveDialog) {
+                        try {
+                            JDialog dlg = loadingDialogRef[0];
+                            if (dlg != null) {
+                                dlg.setVisible(false);
+                                dlg.dispose();
+                            }
+                        } catch (Exception ignored) {}
+                    }
+
                     if (!isCancelled()) {
                         T result = get();
                         if (onSuccess != null) {
@@ -113,8 +127,13 @@ public class BackgroundTaskManager {
             return;
         }
         
-        LoadingDialog loadingDialog = LoadingDialog.show(parent, loadingMessage);
-        loadingDialog.setIndeterminate(false);
+        final JDialog[] loadingDialogRefProg = new JDialog[1];
+        try {
+            loadingDialogRefProg[0] = LoadingUtils.showLoadingDialog(parent, loadingMessage);
+        } catch (Throwable t) {
+            loadingDialogRefProg[0] = null;
+        }
+        final boolean haveDialogProg = loadingDialogRefProg[0] != null;
         
         SwingWorker<T, Integer> worker = new SwingWorker<T, Integer>() {
             @Override
@@ -126,15 +145,26 @@ public class BackgroundTaskManager {
             protected void process(java.util.List<Integer> chunks) {
                 if (!chunks.isEmpty()) {
                     int progress = chunks.get(chunks.size() - 1);
-                    loadingDialog.setProgress(progress);
+                    if (haveDialogProg) {
+                        // No-op: LoadingUtils returns a simple JDialog with a JProgressBar that isn't exposed.
+                        // If a richer LoadingDialog is provided, it will be handled there.
+                    }
                 }
             }
             
             @Override
             protected void done() {
                 try {
-                    loadingDialog.hideLoading();
-                    
+                    if (haveDialogProg) {
+                        try {
+                            JDialog dlg = loadingDialogRefProg[0];
+                            if (dlg != null) {
+                                dlg.setVisible(false);
+                                dlg.dispose();
+                            }
+                        } catch (Exception ignored) {}
+                    }
+
                     if (!isCancelled()) {
                         T result = get();
                         if (onSuccess != null) {

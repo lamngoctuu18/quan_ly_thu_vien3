@@ -76,6 +76,12 @@ public class ClientUIEnhancement {
      * Use this to wrap heavy operations
      */
     public static void executeWithLoading(JFrame parent, String message, Runnable task) {
+        if (!LoadingUtils.ENABLE_LOADING) {
+            // Loading disabled: run synchronously and return
+            task.run();
+            return;
+        }
+
         // Create loading dialog
         JDialog loadingDialog = new JDialog(parent, "Đang xử lý...", true);
         JPanel panel = new JPanel(new BorderLayout(10, 10));

@@ -137,6 +137,11 @@ public class LoadingDialog extends JDialog {
     
     // Static utility methods for easy usage
     public static LoadingDialog show(Frame parent, String message) {
+        if (!LoadingUtils.ENABLE_LOADING) {
+            // Loading disabled - return null to indicate no dialog shown
+            return null;
+        }
+
         LoadingDialog dialog = new LoadingDialog(parent, message);
         // Use SwingWorker to show dialog without blocking
         SwingUtilities.invokeLater(() -> dialog.showLoading());
@@ -144,6 +149,10 @@ public class LoadingDialog extends JDialog {
     }
     
     public static LoadingDialog show(Frame parent, String title, String message) {
+        if (!LoadingUtils.ENABLE_LOADING) {
+            return null;
+        }
+
         LoadingDialog dialog = new LoadingDialog(parent, title, message);
         SwingUtilities.invokeLater(() -> dialog.showLoading());
         return dialog;

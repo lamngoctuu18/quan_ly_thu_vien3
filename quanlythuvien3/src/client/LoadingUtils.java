@@ -7,11 +7,21 @@ import java.awt.*;
  * Simple Loading Utilities
  */
 public class LoadingUtils {
+    // Global toggle to temporarily disable loading UI (useful for debugging/running faster)
+    // Default false to temporarily turn off loading as requested
+    public static volatile boolean ENABLE_LOADING = false;
     
     /**
      * Show a simple loading dialog
      */
     public static JDialog showLoadingDialog(JFrame parent, String message) {
+        if (!ENABLE_LOADING) {
+            // Return a dummy dialog that does nothing when loading is disabled
+            JDialog dummy = new JDialog(parent, "", false);
+            dummy.setSize(0, 0);
+            return dummy;
+        }
+
         JDialog loadingDialog = new JDialog(parent, "Đang xử lý...", true);
         
         JPanel panel = new JPanel(new BorderLayout(10, 10));
@@ -48,22 +58,31 @@ public class LoadingUtils {
      * Execute task with loading dialog
      */
     public static void executeWithLoading(JFrame parent, String message, Runnable task) {
+        if (!ENABLE_LOADING) {
+            // Directly run task synchronously when loading is disabled
+            task.run();
+            return;
+        }
+
         JDialog loadingDialog = showLoadingDialog(parent, message);
-        
+
         SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
             @Override
             protected Void doInBackground() throws Exception {
                 task.run();
                 return null;
             }
-            
+
             @Override
             protected void done() {
-                loadingDialog.setVisible(false);
-                loadingDialog.dispose();
+                try {
+                    loadingDialog.setVisible(false);
+                    loadingDialog.dispose();
+                } catch (Exception ignored) {
+                }
             }
         };
-        
+
         // Show dialog and start task
         SwingUtilities.invokeLater(() -> {
             worker.execute();

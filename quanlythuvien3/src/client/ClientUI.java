@@ -1098,15 +1098,20 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
     
     private void loadBooksGrid() {
         if (booksGridPanel == null) return;
-        
-        // Show loading dialog if available
-        LoadingDialog loadingDialog = null;
-        if (taskManager != null) {
-            loadingDialog = LoadingDialog.show(this, "Đang tải danh sách sách");
+
+        // Show loading dialog if available (use LoadingUtils to avoid tight coupling)
+        JDialog loadingDialog = null;
+        try {
+            if (taskManager != null) {
+                loadingDialog = LoadingUtils.showLoadingDialog(this, "Đang tải danh sách sách");
+            }
+        } catch (Throwable t) {
+            // Defensive: ignore any issues showing loading UI
+            loadingDialog = null;
         }
-        
-        final LoadingDialog finalLoadingDialog = loadingDialog;
-        
+
+        final JDialog finalLoadingDialog = loadingDialog;
+
         // Execute in background
         SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
             @Override
@@ -1114,20 +1119,24 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
                 loadBooksDirectly();
                 return null;
             }
-            
+
             @Override
             protected void done() {
                 if (finalLoadingDialog != null) {
-                    finalLoadingDialog.hideLoading();
+                    try {
+                        finalLoadingDialog.setVisible(false);
+                        finalLoadingDialog.dispose();
+                    } catch (Exception ignored) {
+                    }
                 }
-                
+
                 // Update UI
                 updatePaginationUI();
                 booksGridPanel.revalidate();
                 booksGridPanel.repaint();
             }
         };
-        
+
         worker.execute();
     }
     
@@ -2692,8 +2701,8 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
         }
         
         // Search field with Dark Mode support
-        txtSearch = new JTextField(25);
-        txtSearch.setPreferredSize(new Dimension(350, 46));
+        txtSearch = new JTextField(30);
+        txtSearch.setPreferredSize(new Dimension(450, 46));
         txtSearch.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         txtSearch.setBorder(BorderFactory.createEmptyBorder(12, 5, 12, 12));
         txtSearch.setOpaque(false);
@@ -2820,7 +2829,7 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
         filterPanel.add(lblAuthor, gbc);
         
         gbc.gridx = 1;
-        txtAuthor = createDarkModeTextField("Nhập tên tác giả...", 140);
+        txtAuthor = createDarkModeTextField("Nhập tên tác giả...", 200);
         filterPanel.add(txtAuthor, gbc);
         
         // Publisher filter
@@ -2829,7 +2838,7 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
         filterPanel.add(lblPublisher, gbc);
         
         gbc.gridx = 3;
-        txtPublisher = createDarkModeTextField("Nhập nhà xuất bản...", 140);
+        txtPublisher = createDarkModeTextField("Nhập nhà xuất bản...", 200);
         filterPanel.add(txtPublisher, gbc);
         
         // Category filter
@@ -3106,10 +3115,40 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
                     comboBox.setBackground(DarkModeManager.LightTheme.SURFACE_BG);
                     comboBox.setForeground(DarkModeManager.LightTheme.PRIMARY_TEXT);
                 }
+            } else if (comp instanceof JButton) {
+                JButton button = (JButton) comp;
+                // Handle clear filter button specifically
+                if (button.getText() != null && button.getText().contains("Xóa bộ lọc")) {
+                    updateClearFilterButtonColors(button);
+                }
             } else if (comp instanceof Container) {
                 updateComponentColors((Container) comp);
             }
         }
+    }
+    
+    /**
+     * Update clear filter button colors based on current theme
+     */
+    private void updateClearFilterButtonColors(JButton button) {
+        Color bgColor, textColor, borderColor;
+        if (darkModeManager != null && darkModeManager.isDarkMode()) {
+            bgColor = DarkModeManager.DarkTheme.SURFACE_BG;
+            textColor = DarkModeManager.DarkTheme.SECONDARY_TEXT;
+            borderColor = DarkModeManager.DarkTheme.BORDER_COLOR;
+        } else {
+            bgColor = new Color(248, 249, 250);
+            textColor = new Color(73, 80, 87);
+            borderColor = DarkModeManager.LightTheme.BORDER_COLOR;
+        }
+        
+        button.setBackground(bgColor);
+        button.setForeground(textColor);
+        button.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(borderColor, 1),
+            BorderFactory.createEmptyBorder(10, 15, 10, 15)
+        ));
+        button.repaint();
     }
     
     private void loadUserAvatar(String avatarUrl) {
