@@ -482,47 +482,98 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
         return headerContainer;
     }
     
+    /**
+     * ✨ MODERN USER SECTION - Clean & Beautiful Design
+     * 3 components: Profile Card, Theme Toggle, Notifications
+     */
     private JPanel createModernUserSection() {
-        // Use BoxLayout for better control and prevent overlapping
         JPanel userSection = new JPanel();
         userSection.setLayout(new BoxLayout(userSection, BoxLayout.X_AXIS));
         userSection.setOpaque(false);
         
-        // User profile panel with modern card design - CREATE FIRST
-        JPanel userProfilePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        userProfilePanel.setBackground(new Color(255, 255, 255, 95));
-        userProfilePanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(255, 255, 255, 60), 1),
-            BorderFactory.createEmptyBorder(8, 12, 8, 12)
-        ));
-        userProfilePanel.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        userProfilePanel.setPreferredSize(new Dimension(200, 46));
-        userProfilePanel.setMaximumSize(new Dimension(250, 46)); // Đủ rộng cho text
+        // 1. User Profile Card (Avatar + Name)
+        JPanel profileCard = createModernProfileCard();
         
-        // Avatar with circular border
-        lblAvatar = new JLabel();
-        lblAvatar.setPreferredSize(new Dimension(32, 32)); // Tăng lên 32x32 để rõ hơn
-        lblAvatar.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        lblAvatar.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(Color.WHITE, 2),
-            BorderFactory.createEmptyBorder(0, 0, 0, 0)
-        ));
-        lblAvatar.setOpaque(false);
+        // 2. Theme Toggle Button (Light/Dark)
+        JButton btnTheme = createModernThemeButton();
+        
+        // 3. Notification Button
+        JButton btnNotif = createModernNotificationButton();
+        
+        // Assemble với spacing
+        userSection.add(profileCard);
+        userSection.add(Box.createRigidArea(new Dimension(10, 0)));
+        userSection.add(btnTheme);
+        userSection.add(Box.createRigidArea(new Dimension(10, 0)));
+        userSection.add(btnNotif);
+        
+        return userSection;
+    }
+    
+    /**
+     * 👤 Modern Profile Card với Glass Morphism Effect
+     */
+    private JPanel createModernProfileCard() {
+        JPanel card = new JPanel(new BorderLayout(10, 0)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Glass morphism background
+                g2d.setColor(new Color(255, 255, 255, 100));
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 25, 25);
+                
+                // Border glow
+                g2d.setColor(new Color(255, 255, 255, 80));
+                g2d.setStroke(new BasicStroke(1.5f));
+                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 25, 25);
+                
+                g2d.dispose();
+            }
+        };
+        
+        card.setOpaque(false);
+        card.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
+        card.setPreferredSize(new Dimension(220, 50));
+        card.setMaximumSize(new Dimension(280, 50));
+        card.setMinimumSize(new Dimension(200, 50));
+        card.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        // Avatar container
+        JPanel avatarContainer = new JPanel(new BorderLayout());
+        avatarContainer.setOpaque(false);
+        
+        lblAvatar = new JLabel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Draw circular avatar background
+                g2d.setColor(new Color(88, 166, 255));
+                g2d.fillOval(0, 0, 36, 36);
+                
+                super.paintComponent(g);
+                g2d.dispose();
+            }
+        };
+        lblAvatar.setPreferredSize(new Dimension(36, 36));
         lblAvatar.setHorizontalAlignment(SwingConstants.CENTER);
         lblAvatar.setVerticalAlignment(SwingConstants.CENTER);
+        avatarContainer.add(lblAvatar, BorderLayout.CENTER);
         
-        // User name label
+        // Username label
         lblUser = new JLabel("Chưa đăng nhập");
-        lblUser.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblUser.setFont(new Font("Segoe UI", Font.BOLD, 14));
         lblUser.setForeground(Color.WHITE);
-        lblUser.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        lblUser.setOpaque(false);
         
-        userProfilePanel.add(lblAvatar);
-        userProfilePanel.add(lblUser);
+        card.add(avatarContainer, BorderLayout.WEST);
+        card.add(lblUser, BorderLayout.CENTER);
         
-        // Click listener cho user profile
-        userProfilePanel.addMouseListener(new MouseAdapter() {
+        // Hover animation
+        card.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 showUserProfile();
@@ -530,99 +581,132 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
             
             @Override
             public void mouseEntered(MouseEvent e) {
-                userProfilePanel.setBackground(new Color(255, 255, 255, 110));
+                card.repaint();
             }
             
             @Override
             public void mouseExited(MouseEvent e) {
-                userProfilePanel.setBackground(new Color(255, 255, 255, 95));
+                card.repaint();
             }
         });
         
-        // Dark mode toggle button
-        JButton btnDarkMode = new JButton(darkModeManager != null && darkModeManager.isDarkMode() ? "☀️" : "🌙");
-        btnDarkMode.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 18));
-        btnDarkMode.setPreferredSize(new Dimension(46, 46));
-        btnDarkMode.setMaximumSize(new Dimension(46, 46));
-        btnDarkMode.setMinimumSize(new Dimension(46, 46));
-        btnDarkMode.setBackground(new Color(255, 255, 255, 25));
-        btnDarkMode.setForeground(Color.WHITE);
-        btnDarkMode.setBorder(BorderFactory.createEmptyBorder());
-        btnDarkMode.setFocusPainted(false);
-        btnDarkMode.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnDarkMode.setContentAreaFilled(false);
-        btnDarkMode.setOpaque(true);
+        return card;
+    }
+    
+    /**
+     * 🎨 Modern Theme Toggle Button - Flat Design
+     */
+    private JButton createModernThemeButton() {
+        boolean isDark = (darkModeManager != null && darkModeManager.isDarkMode());
+        String text = isDark ? "Light" : "Dark";
         
-        // Remove old listeners to prevent duplication
-        for (MouseListener ml : btnDarkMode.getMouseListeners()) {
-            btnDarkMode.removeMouseListener(ml);
-        }
-        
-        btnDarkMode.addMouseListener(new MouseAdapter() {
+        JButton btn = new JButton(text) {
             @Override
-            public void mouseEntered(MouseEvent e) {
-                btnDarkMode.setBackground(new Color(255, 255, 255, 40));
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Background với gradient
+                if (getModel().isPressed()) {
+                    g2d.setColor(new Color(255, 255, 255, 120));
+                } else if (getModel().isRollover()) {
+                    g2d.setColor(new Color(255, 255, 255, 100));
+                } else {
+                    g2d.setColor(new Color(255, 255, 255, 70));
+                }
+                
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 25, 25);
+                
+                // Border
+                g2d.setColor(new Color(255, 255, 255, 120));
+                g2d.setStroke(new BasicStroke(1.5f));
+                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 25, 25);
+                
+                g2d.dispose();
+                super.paintComponent(g);
             }
-            @Override
-            public void mouseExited(MouseEvent e) {
-                btnDarkMode.setBackground(new Color(255, 255, 255, 25));
-            }
-        });
+        };
         
-        btnDarkMode.addActionListener(e -> {
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btn.setForeground(Color.WHITE);
+        btn.setPreferredSize(new Dimension(90, 50));
+        btn.setMaximumSize(new Dimension(90, 50));
+        btn.setMinimumSize(new Dimension(90, 50));
+        btn.setFocusPainted(false);
+        btn.setBorderPainted(false);
+        btn.setContentAreaFilled(false);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setToolTipText("Chuyển đổi giao diện");
+        
+        // Action
+        btn.addActionListener(e -> {
             if (darkModeManager != null) {
                 darkModeManager.toggleDarkMode();
-                btnDarkMode.setText(darkModeManager.isDarkMode() ? "☀️" : "🌙");
+                boolean newIsDark = darkModeManager.isDarkMode();
+                btn.setText(newIsDark ? "Light" : "Dark");
+                btn.repaint();
             }
         });
         
-        // Notification button with badge - CHỈ KHỞI TẠO 1 LẦN
-        if (btnNotification == null) {
-            btnNotification = new JButton("🔔");
-            btnNotification.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 20));
-            btnNotification.setPreferredSize(new Dimension(46, 46));
-            btnNotification.setMaximumSize(new Dimension(46, 46));
-            btnNotification.setMinimumSize(new Dimension(46, 46));
-            btnNotification.setBackground(new Color(255, 255, 255, 25));
-            btnNotification.setForeground(Color.WHITE);
-            btnNotification.setBorder(BorderFactory.createEmptyBorder());
-            btnNotification.setFocusPainted(false);
-            btnNotification.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            btnNotification.setContentAreaFilled(false);
-            btnNotification.setOpaque(true);
-            btnNotification.setToolTipText("Xem thông báo");
-            
-            // Add action listener
-            btnNotification.addActionListener(e -> showNotifications());
-        }
-        
-        // Remove old mouse listeners để tránh duplicate
-        for (MouseListener ml : btnNotification.getMouseListeners()) {
-            if (ml instanceof MouseAdapter) {
+        return btn;
+    }
+    
+    /**
+     * 🔔 Modern Notification Button với Badge Counter
+     */
+    private JButton createModernNotificationButton() {
+        // Singleton pattern - xóa listeners cũ nếu tồn tại
+        if (btnNotification != null) {
+            for (ActionListener al : btnNotification.getActionListeners()) {
+                btnNotification.removeActionListener(al);
+            }
+            for (MouseListener ml : btnNotification.getMouseListeners()) {
                 btnNotification.removeMouseListener(ml);
             }
         }
         
-        // Hover effect for notification button
-        btnNotification.addMouseListener(new MouseAdapter() {
+        btnNotification = new JButton("Thông báo") {
             @Override
-            public void mouseEntered(MouseEvent e) {
-                btnNotification.setBackground(new Color(255, 255, 255, 40));
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Background
+                if (getModel().isPressed()) {
+                    g2d.setColor(new Color(255, 107, 107, 200)); // Red pressed
+                } else if (getModel().isRollover()) {
+                    g2d.setColor(new Color(255, 107, 107, 180)); // Red hover
+                } else {
+                    g2d.setColor(new Color(255, 107, 107, 160)); // Red default
+                }
+                
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 25, 25);
+                
+                // Border glow
+                g2d.setColor(new Color(255, 255, 255, 100));
+                g2d.setStroke(new BasicStroke(1.5f));
+                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 25, 25);
+                
+                g2d.dispose();
+                super.paintComponent(g);
             }
-            @Override
-            public void mouseExited(MouseEvent e) {
-                btnNotification.setBackground(new Color(255, 255, 255, 25));
-            }
-        });
+        };
         
-        // Add components with proper spacing - ORDER: Profile, DarkMode, Notification
-        userSection.add(userProfilePanel);
-        userSection.add(Box.createRigidArea(new Dimension(12, 0))); // 12px spacing
-        userSection.add(btnDarkMode);
-        userSection.add(Box.createRigidArea(new Dimension(12, 0))); // 12px spacing
-        userSection.add(btnNotification);
+        btnNotification.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btnNotification.setForeground(Color.WHITE);
+        btnNotification.setPreferredSize(new Dimension(110, 50));
+        btnNotification.setMaximumSize(new Dimension(110, 50));
+        btnNotification.setMinimumSize(new Dimension(110, 50));
+        btnNotification.setFocusPainted(false);
+        btnNotification.setBorderPainted(false);
+        btnNotification.setContentAreaFilled(false);
+        btnNotification.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnNotification.setToolTipText("Xem thông báo của bạn");
         
-        return userSection;
+        // Action
+        btnNotification.addActionListener(e -> showNotifications());
+        
+        return btnNotification;
     }
     
     /**
@@ -1939,18 +2023,18 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
         buttonPanel.setOpaque(false);
         buttonPanel.setBorder(BorderFactory.createEmptyBorder(12, 0, 0, 0));
         
-        // Favorite button with icon
-        JButton favoriteBtn = createModernActionButton("❤️", new Color(239, 68, 68), new Color(220, 38, 38));
+        // Favorite button with text
+        JButton favoriteBtn = createModernActionButton("♥", new Color(239, 68, 68), new Color(220, 38, 38));
         favoriteBtn.setToolTipText("Thêm vào yêu thích");
         favoriteBtn.addActionListener(e -> addToFavorite(bookId));
         
         // Info button
-        JButton infoBtn = createModernActionButton("ℹ️", new Color(59, 130, 246), new Color(37, 99, 235));
+        JButton infoBtn = createModernActionButton("i", new Color(59, 130, 246), new Color(37, 99, 235));
         infoBtn.setToolTipText("Xem chi tiết");
         infoBtn.addActionListener(e -> showBookDetails(bookId, title, author, category, quantity, coverImage));
         
         // Borrow button
-        JButton borrowBtn = createModernActionButton("📥", new Color(16, 185, 129), new Color(5, 150, 105));
+        JButton borrowBtn = createModernActionButton("M", new Color(16, 185, 129), new Color(5, 150, 105));
         borrowBtn.setToolTipText("Đăng ký mượn");
         borrowBtn.setEnabled(quantity > 0);
         if (quantity <= 0) {
@@ -1997,7 +2081,7 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
                 g2d.setColor(currentColor);
                 g2d.fillOval(0, 0, getWidth(), getHeight());
                 
-                // Text/Icon
+                // Text
                 g2d.setColor(getForeground());
                 g2d.setFont(getFont());
                 FontMetrics fm = g2d.getFontMetrics();
@@ -2007,7 +2091,7 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
             }
         };
         
-        button.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
+        button.setFont(new Font("Segoe UI", Font.BOLD, 18));
         button.setForeground(Color.WHITE);
         button.setPreferredSize(new Dimension(42, 42));
         button.setFocusPainted(false);
