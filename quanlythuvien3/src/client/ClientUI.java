@@ -47,6 +47,9 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
     
     // Dark Mode support
     private DarkModeManager darkModeManager;
+    
+    // Loading state để ngăn multiple clicks
+    private volatile boolean isLoading = false;
 
     private static final String[] CATEGORIES = {
         "Tất cả",
@@ -333,28 +336,242 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
     }
     
     private void createMainInterface() {
-        // Main panel with modern styling - sẽ được cập nhật bởi Dark Mode
-        JPanel mainPanel = new JPanel(new BorderLayout(15, 15));
-        mainPanel.setBackground(new Color(248, 249, 250)); // Light mode mặc định
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        // Main panel with modern gradient background
+        JPanel mainPanel = new JPanel(new BorderLayout(0, 0)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                
+                // Modern gradient background
+                GradientPaint gradient;
+                if (darkModeManager != null && darkModeManager.isDarkMode()) {
+                    gradient = new GradientPaint(
+                        0, 0, new Color(17, 24, 39),
+                        0, getHeight(), new Color(31, 41, 55)
+                    );
+                } else {
+                    gradient = new GradientPaint(
+                        0, 0, new Color(240, 244, 248),
+                        0, getHeight(), new Color(255, 255, 255)
+                    );
+                }
+                g2d.setPaint(gradient);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
         setContentPane(mainPanel);
 
-        // Top panel - Header with search and user info
-        JPanel topPanel = createTopPanel();
+        // Top panel - Modern header with gradient
+        JPanel topPanel = createModernTopPanel();
         
-        // Center panel - Books display
+        // Center panel - Books display with card design
         JPanel centerPanel = createCenterPanel();
         
-        // Bottom panel - Navigation buttons
-        JPanel bottomPanel = createBottomPanel();
+        // Bottom panel - Enhanced navigation buttons
+        JPanel bottomPanel = createEnhancedBottomPanel();
         
-        // Add panels to main panel
+        // Add panels to main panel with spacing
+        JPanel contentWrapper = new JPanel(new BorderLayout(0, 15));
+        contentWrapper.setOpaque(false);
+        contentWrapper.setBorder(BorderFactory.createEmptyBorder(0, 20, 20, 20));
+        
+        contentWrapper.add(centerPanel, BorderLayout.CENTER);
+        contentWrapper.add(bottomPanel, BorderLayout.SOUTH);
+        
         mainPanel.add(topPanel, BorderLayout.NORTH);
-        mainPanel.add(centerPanel, BorderLayout.CENTER);
-        mainPanel.add(bottomPanel, BorderLayout.SOUTH);
+        mainPanel.add(contentWrapper, BorderLayout.CENTER);
         
         // Add event listeners
         addEventListeners();
+    }
+    
+    private JPanel createModernTopPanel() {
+        // Modern header panel with gradient
+        JPanel headerContainer = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                
+                // Gradient header background
+                GradientPaint gradient;
+                if (darkModeManager != null && darkModeManager.isDarkMode()) {
+                    gradient = new GradientPaint(
+                        0, 0, new Color(30, 58, 138),
+                        getWidth(), 0, new Color(79, 70, 229)
+                    );
+                } else {
+                    gradient = new GradientPaint(
+                        0, 0, new Color(59, 130, 246),
+                        getWidth(), 0, new Color(147, 51, 234)
+                    );
+                }
+                g2d.setPaint(gradient);
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 0, 0);
+            }
+        };
+        headerContainer.setBorder(BorderFactory.createEmptyBorder(25, 30, 25, 30));
+        
+        // Logo and title section
+        JPanel titleSection = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
+        titleSection.setOpaque(false);
+        
+        JLabel logoLabel = new JLabel("📚");
+        logoLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 32));
+        
+        JPanel titleTextPanel = new JPanel();
+        titleTextPanel.setLayout(new BoxLayout(titleTextPanel, BoxLayout.Y_AXIS));
+        titleTextPanel.setOpaque(false);
+        
+        JLabel mainTitle = new JLabel("Thư Viện Điện Tử");
+        mainTitle.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        mainTitle.setForeground(Color.WHITE);
+        
+        JLabel subtitle = new JLabel("Khám phá tri thức - Nâng tầm giá trị");
+        subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        subtitle.setForeground(new Color(255, 255, 255, 180));
+        
+        titleTextPanel.add(mainTitle);
+        titleTextPanel.add(Box.createVerticalStrut(2));
+        titleTextPanel.add(subtitle);
+        
+        titleSection.add(logoLabel);
+        titleSection.add(titleTextPanel);
+        
+        // User section with modern design
+        JPanel userSection = createModernUserSection();
+        
+        // Search and filter section
+        JPanel searchFilterWrapper = new JPanel(new BorderLayout(0, 15));
+        searchFilterWrapper.setOpaque(false);
+        searchFilterWrapper.setBorder(BorderFactory.createEmptyBorder(20, 0, 0, 0));
+        
+        JPanel searchSection = createModernSearchSection();
+        JPanel filterSection = createModernFilterSection();
+        
+        searchFilterWrapper.add(searchSection, BorderLayout.NORTH);
+        searchFilterWrapper.add(filterSection, BorderLayout.CENTER);
+        
+        // Assemble header
+        JPanel topRow = new JPanel(new BorderLayout());
+        topRow.setOpaque(false);
+        topRow.add(titleSection, BorderLayout.WEST);
+        topRow.add(userSection, BorderLayout.EAST);
+        
+        headerContainer.add(topRow, BorderLayout.NORTH);
+        headerContainer.add(searchFilterWrapper, BorderLayout.CENTER);
+        
+        return headerContainer;
+    }
+    
+    private JPanel createModernUserSection() {
+        JPanel userSection = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
+        userSection.setOpaque(false);
+        
+        // Notification button with badge
+        btnNotification = new JButton("🔔");
+        btnNotification.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 20));
+        btnNotification.setPreferredSize(new Dimension(46, 46));
+        btnNotification.setBackground(new Color(255, 255, 255, 25));
+        btnNotification.setForeground(Color.WHITE);
+        btnNotification.setBorder(BorderFactory.createEmptyBorder());
+        btnNotification.setFocusPainted(false);
+        btnNotification.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnNotification.setContentAreaFilled(false);
+        btnNotification.setOpaque(true);
+        
+        // Hover effect for notification button
+        btnNotification.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                btnNotification.setBackground(new Color(255, 255, 255, 40));
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                btnNotification.setBackground(new Color(255, 255, 255, 25));
+            }
+        });
+        
+        // Dark mode toggle button
+        JButton btnDarkMode = new JButton(darkModeManager != null && darkModeManager.isDarkMode() ? "☀️" : "🌙");
+        btnDarkMode.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 18));
+        btnDarkMode.setPreferredSize(new Dimension(46, 46));
+        btnDarkMode.setBackground(new Color(255, 255, 255, 25));
+        btnDarkMode.setForeground(Color.WHITE);
+        btnDarkMode.setBorder(BorderFactory.createEmptyBorder());
+        btnDarkMode.setFocusPainted(false);
+        btnDarkMode.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnDarkMode.setContentAreaFilled(false);
+        btnDarkMode.setOpaque(true);
+        
+        btnDarkMode.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                btnDarkMode.setBackground(new Color(255, 255, 255, 40));
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                btnDarkMode.setBackground(new Color(255, 255, 255, 25));
+            }
+        });
+        
+        btnDarkMode.addActionListener(e -> {
+            if (darkModeManager != null) {
+                darkModeManager.toggleDarkMode();
+                btnDarkMode.setText(darkModeManager.isDarkMode() ? "☀️" : "🌙");
+            }
+        });
+        
+        // User profile panel with modern card design
+        JPanel userProfilePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        userProfilePanel.setBackground(new Color(255, 255, 255, 95));
+        userProfilePanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(255, 255, 255, 60), 1),
+            BorderFactory.createEmptyBorder(8, 14, 8, 14)
+        ));
+        userProfilePanel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        // Avatar with circular border
+        lblAvatar = new JLabel();
+        lblAvatar.setPreferredSize(new Dimension(32, 32));
+        lblAvatar.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        lblAvatar.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.WHITE, 2),
+            BorderFactory.createEmptyBorder(0, 0, 0, 0)
+        ));
+        lblAvatar.setOpaque(false);
+        
+        // User name label
+        lblUser = new JLabel("Chưa đăng nhập");
+        lblUser.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblUser.setForeground(Color.WHITE);
+        lblUser.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        lblUser.setOpaque(false);
+        
+        userProfilePanel.add(lblAvatar);
+        userProfilePanel.add(lblUser);
+        
+        // Hover effect for user profile
+        userProfilePanel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                userProfilePanel.setBackground(new Color(255, 255, 255, 110));
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                userProfilePanel.setBackground(new Color(255, 255, 255, 95));
+            }
+        });
+        
+        userSection.add(btnNotification);
+        userSection.add(btnDarkMode);
+        userSection.add(userProfilePanel);
+        
+        return userSection;
     }
     
     private JPanel createTopPanel() {
@@ -626,6 +843,102 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
             button.setBackground(new Color(176, 190, 197));
             button.setForeground(new Color(127, 140, 141));
         }
+    }
+    
+    private JPanel createEnhancedBottomPanel() {
+        JPanel bottomWrapper = new JPanel(new BorderLayout());
+        bottomWrapper.setOpaque(false);
+        bottomWrapper.setBorder(BorderFactory.createEmptyBorder(15, 0, 0, 0));
+        
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
+        bottomPanel.setOpaque(false);
+        
+        // Create modern navigation buttons with icons
+        btnFavorite = createModernNavButton("❤️ Sách yêu thích", new Color(239, 68, 68), new Color(220, 38, 38));
+        btnActivity = createModernNavButton("📊 Hoạt động", new Color(34, 197, 94), new Color(22, 163, 74));
+        btnBorrow = createModernNavButton("📝 Đăng ký mượn", new Color(59, 130, 246), new Color(37, 99, 235));
+        JButton btnRefresh = createModernNavButton("🔄 Làm mới", new Color(14, 165, 233), new Color(2, 132, 199));
+        JButton btnBorrowedBooks = createModernNavButton("📚 Sách đã mượn", new Color(168, 85, 247), new Color(147, 51, 234));
+        
+        // Add refresh functionality
+        btnRefresh.addActionListener(e -> refreshBookDisplay());
+        
+        btnBorrowedBooks.addActionListener(e -> {
+            if (userId == -1) {
+                showModernMessage("Vui lòng đăng nhập để xem sách đã mượn!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+            new BorrowListUI(userId).setVisible(true);
+        });
+        
+        bottomPanel.add(btnFavorite);
+        bottomPanel.add(btnActivity);
+        bottomPanel.add(btnBorrow);
+        bottomPanel.add(btnBorrowedBooks);
+        bottomPanel.add(btnRefresh);
+        
+        bottomWrapper.add(bottomPanel, BorderLayout.CENTER);
+        
+        return bottomWrapper;
+    }
+    
+    private JButton createModernNavButton(String text, Color baseColor, Color hoverColor) {
+        JButton button = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Draw shadow
+                g2d.setColor(new Color(0, 0, 0, 30));
+                g2d.fillRoundRect(2, 4, getWidth() - 4, getHeight() - 4, 12, 12);
+                
+                // Draw button background
+                Color currentColor = getModel().isRollover() ? hoverColor : baseColor;
+                g2d.setColor(currentColor);
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+                
+                // Draw text
+                g2d.setColor(getForeground());
+                g2d.setFont(getFont());
+                FontMetrics fm = g2d.getFontMetrics();
+                int x = (getWidth() - fm.stringWidth(getText())) / 2;
+                int y = (getHeight() + fm.getAscent() - fm.getDescent()) / 2;
+                g2d.drawString(getText(), x, y);
+            }
+        };
+        
+        button.setForeground(Color.WHITE);
+        button.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        button.setPreferredSize(new Dimension(170, 52));
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setContentAreaFilled(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        // Hover animation
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                button.repaint();
+            }
+            
+            @Override
+            public void mouseExited(MouseEvent e) {
+                button.repaint();
+            }
+        });
+        
+        return button;
+    }
+    
+    private void showModernMessage(String message, String title, int messageType) {
+        UIManager.put("OptionPane.background", Color.WHITE);
+        UIManager.put("Panel.background", Color.WHITE);
+        UIManager.put("OptionPane.messageForeground", new Color(51, 51, 51));
+        UIManager.put("OptionPane.messageFont", new Font("Segoe UI", Font.PLAIN, 14));
+        
+        JOptionPane.showMessageDialog(this, message, title, messageType);
     }
     
     private JPanel createBottomPanel() {
@@ -1098,6 +1411,14 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
     
     private void loadBooksGrid() {
         if (booksGridPanel == null) return;
+        
+        // Ngăn chặn multiple loading cùng lúc
+        if (isLoading) {
+            System.out.println("⚠️ Đang load sách, bỏ qua request mới");
+            return;
+        }
+        
+        isLoading = true;
 
         // Show loading dialog if available (use LoadingUtils to avoid tight coupling)
         JDialog loadingDialog = null;
@@ -1130,10 +1451,11 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
                     }
                 }
 
-                // Update UI
+                // Update UI - pagination được cập nhật sau khi load xong
                 updatePaginationUI();
-                booksGridPanel.revalidate();
-                booksGridPanel.repaint();
+                
+                // Reset loading state
+                isLoading = false;
             }
         };
 
@@ -1144,15 +1466,19 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
      * Load books directly (can be called from background thread)
      */
     private void loadBooksDirectly() {
-        SwingUtilities.invokeLater(() -> booksGridPanel.removeAll());
+        // Tạo danh sách tạm để chứa các book panels
+        java.util.List<JPanel> bookPanels = new java.util.ArrayList<>();
         
         try {
             if (dbManager != null) {
-                dbManager.executeWithConnection(this::loadBooksFromDatabase);
+                dbManager.executeWithConnection(conn -> {
+                    loadBooksFromDatabase(conn, bookPanels);
+                    return null;
+                });
             } else {
                 // Fallback to direct connection
                 try (Connection conn = DriverManager.getConnection("jdbc:sqlite:C:/data/library.db?busy_timeout=30000")) {
-                    loadBooksFromDatabase(conn);
+                    loadBooksFromDatabase(conn, bookPanels);
                 }
             }
         } catch (SQLException e) {
@@ -1162,13 +1488,24 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
                     "Lỗi", 
                     JOptionPane.ERROR_MESSAGE);
             });
+            return;
         }
+        
+        // Cập nhật UI một lần duy nhất trên EDT
+        SwingUtilities.invokeLater(() -> {
+            booksGridPanel.removeAll();
+            for (JPanel bookPanel : bookPanels) {
+                booksGridPanel.add(bookPanel);
+            }
+            booksGridPanel.revalidate();
+            booksGridPanel.repaint();
+        });
     }
     
     /**
      * Load books from database connection
      */
-    private void loadBooksFromDatabase(Connection conn) throws SQLException {
+    private void loadBooksFromDatabase(Connection conn, java.util.List<JPanel> bookPanels) throws SQLException {
         try {
             Statement stmt = conn.createStatement();
             stmt.execute("ALTER TABLE books ADD COLUMN status TEXT DEFAULT 'approved'");
@@ -1289,6 +1626,7 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
         
         ResultSet rs = dataPs.executeQuery();
         
+        // Thu thập tất cả book panels trước khi thêm vào UI
         while (rs.next()) {
             String bookId = rs.getString("id");
             String title = rs.getString("title");
@@ -1298,203 +1636,256 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
             String coverImage = rs.getString("cover_image");
             String status = rs.getString("status");
             
-            // Create panel for all books - no status restriction for display
+            // Create panel for all books - thêm vào list thay vì trực tiếp vào UI
             JPanel bookPanel = createBookPanelWithStatus(bookId, title, author, category, quantity, coverImage, status);
-            SwingUtilities.invokeLater(() -> booksGridPanel.add(bookPanel));
+            bookPanels.add(bookPanel);
         }
         
         rs.close();
         dataPs.close();
-        
-        // Update pagination UI on EDT
-        SwingUtilities.invokeLater(() -> {
-            updatePaginationUI();
-            booksGridPanel.revalidate();
-            booksGridPanel.repaint();
-        });
     }
 
     private JPanel createBookPanelWithStatus(String bookId, String title, String author, String category, int quantity, String coverImage, String status) {
-        JPanel bookPanel = new JPanel();
-        bookPanel.setLayout(new BoxLayout(bookPanel, BoxLayout.Y_AXIS));
-        bookPanel.setBackground(Color.WHITE);
-        bookPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(220, 220, 220), 1),
-            BorderFactory.createEmptyBorder(8, 8, 8, 8)
-        ));
-        bookPanel.setPreferredSize(new Dimension(200, 300));
+        // Modern card panel with shadow effect
+        JPanel bookPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Draw shadow layers for depth
+                g2d.setColor(new Color(0, 0, 0, 8));
+                g2d.fillRoundRect(4, 6, getWidth() - 8, getHeight() - 8, 16, 16);
+                g2d.setColor(new Color(0, 0, 0, 5));
+                g2d.fillRoundRect(2, 4, getWidth() - 4, getHeight() - 4, 16, 16);
+                
+                // Draw card background
+                Color cardBg;
+                if (darkModeManager != null && darkModeManager.isDarkMode()) {
+                    cardBg = new Color(31, 41, 55);
+                } else {
+                    cardBg = Color.WHITE;
+                }
+                g2d.setColor(cardBg);
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 16, 16);
+                
+                // Subtle border
+                g2d.setColor(new Color(229, 231, 235));
+                g2d.setStroke(new BasicStroke(1.0f));
+                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 16, 16);
+            }
+        };
         
-        // Book image panel - compact design with no distortion
-        JPanel imagePanel = new JPanel(new BorderLayout());
-        imagePanel.setPreferredSize(new Dimension(160, 140));
-        imagePanel.setBackground(new Color(248, 249, 250));
-        imagePanel.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220), 1));
+        bookPanel.setLayout(new BoxLayout(bookPanel, BoxLayout.Y_AXIS));
+        bookPanel.setOpaque(false);
+        bookPanel.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+        bookPanel.setPreferredSize(new Dimension(210, 380));
+        
+        // Hover effect
+        bookPanel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                bookPanel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                bookPanel.repaint();
+            }
+            
+            @Override
+            public void mouseExited(MouseEvent e) {
+                bookPanel.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+                bookPanel.repaint();
+            }
+        });
+        
+        // Book image panel with modern styling
+        JPanel imagePanel = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Gradient background for image container
+                GradientPaint gradient = new GradientPaint(
+                    0, 0, new Color(243, 244, 246),
+                    0, getHeight(), new Color(229, 231, 235)
+                );
+                g2d.setPaint(gradient);
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+            }
+        };
+        imagePanel.setOpaque(false);
+        imagePanel.setPreferredSize(new Dimension(180, 200));
+        imagePanel.setMaximumSize(new Dimension(180, 200));
+        imagePanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         
         JLabel imageLabel;
         if (coverImage != null && !coverImage.trim().isEmpty()) {
             try {
-                // Load image from URL with better error handling
-                java.net.URL imageUrl = new java.net.URL(coverImage);
-                ImageIcon originalIcon = new ImageIcon(imageUrl);
+                // Use cache manager for optimal performance
+                ImageCacheManager cacheManager = ImageCacheManager.getInstance();
+                ImageIcon cachedIcon = cacheManager.getImage(coverImage, bookId, 164, 184);
                 
-                // Wait for image to load completely
-                if (originalIcon.getIconWidth() > 0 && originalIcon.getIconHeight() > 0) {
-                    // Calculate dimensions to maintain aspect ratio without distortion
-                    int maxWidth = 150;
-                    int maxHeight = 130;
-                    int originalWidth = originalIcon.getIconWidth();
-                    int originalHeight = originalIcon.getIconHeight();
-                    
-                    // Calculate scale factor to fit within bounds without distortion
-                    double scaleWidth = (double) maxWidth / originalWidth;
-                    double scaleHeight = (double) maxHeight / originalHeight;
-                    double scale = Math.min(scaleWidth, scaleHeight);
-                    
-                    int scaledWidth = (int) (originalWidth * scale);
-                    int scaledHeight = (int) (originalHeight * scale);
-                    
-                    Image scaledImage = originalIcon.getImage().getScaledInstance(scaledWidth, scaledHeight, Image.SCALE_SMOOTH);
-                    imageLabel = new JLabel(new ImageIcon(scaledImage), SwingConstants.CENTER);
-                    imageLabel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+                if (cachedIcon != null && cachedIcon.getIconWidth() > 0) {
+                    imageLabel = new JLabel(cachedIcon, SwingConstants.CENTER);
                 } else {
-                    // If image loading fails, show category name
-                    String bookIcon = getBookIcon(category);
-                    imageLabel = new JLabel(bookIcon, SwingConstants.CENTER);
-                    imageLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
-                    imageLabel.setForeground(getCategoryColor(category));
+                    imageLabel = createFallbackImageLabel(category);
                 }
             } catch (Exception e) {
-                // If image loading fails, show category name
-                String bookIcon = getBookIcon(category);
-                imageLabel = new JLabel(bookIcon, SwingConstants.CENTER);
-                imageLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
-                imageLabel.setForeground(getCategoryColor(category));
+                imageLabel = createFallbackImageLabel(category);
             }
         } else {
-            // Default category name with category-based styling
-            String bookIcon = getBookIcon(category);
-            imageLabel = new JLabel(bookIcon, SwingConstants.CENTER);
-            imageLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
-            imageLabel.setForeground(getCategoryColor(category));
+            imageLabel = createFallbackImageLabel(category);
         }
         
-        // Add click listener to image to show book details
         imageLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
         imageLabel.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 showBookDetails(bookId, title, author, category, quantity, coverImage);
             }
-            
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                imagePanel.setBorder(BorderFactory.createLineBorder(new Color(0, 123, 255), 2));
-            }
-            
-            @Override
-            public void mouseExited(MouseEvent e) {
-                imagePanel.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
-            }
         });
         
         imagePanel.add(imageLabel, BorderLayout.CENTER);
         
-        // Book information
-        JLabel titleLabel = new JLabel("<html><div style='width:180px;text-align:center'><b>" + title + "</b></div></html>");
+        // Book information section
+        JPanel infoPanel = new JPanel();
+        infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
+        infoPanel.setOpaque(false);
+        infoPanel.setBorder(BorderFactory.createEmptyBorder(12, 0, 8, 0));
+        
+        // Title with modern styling
+        JLabel titleLabel = new JLabel("<html><div style='width:180px;text-align:center;line-height:1.3'><b>" + 
+            (title.length() > 50 ? title.substring(0, 50) + "..." : title) + "</b></div></html>");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        titleLabel.setForeground(new Color(33, 37, 41));
+        if (darkModeManager != null && darkModeManager.isDarkMode()) {
+            titleLabel.setForeground(new Color(243, 244, 246));
+        } else {
+            titleLabel.setForeground(new Color(17, 24, 39));
+        }
         
-        JLabel authorLabel = new JLabel("<html><div style='width:180px;text-align:center'>" + author + "</div></html>");
+        // Author label
+        JLabel authorLabel = new JLabel("<html><div style='width:180px;text-align:center'>" + 
+            (author.length() > 40 ? author.substring(0, 40) + "..." : author) + "</div></html>");
         authorLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        authorLabel.setForeground(new Color(108, 117, 125));
+        authorLabel.setForeground(new Color(107, 114, 128));
         authorLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         
-        JLabel categoryLabel = new JLabel("<html><div style='width:180px;text-align:center'><i>" + category + "</i></div></html>");
-        categoryLabel.setFont(new Font("Segoe UI", Font.ITALIC, 11));
-        categoryLabel.setForeground(new Color(134, 142, 150));
-        categoryLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        // Category badge
+        JPanel categoryBadge = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        categoryBadge.setOpaque(false);
+        categoryBadge.setMaximumSize(new Dimension(180, 25));
         
-        JLabel quantityLabel = new JLabel("Còn lại: " + quantity + " cuốn");
-        quantityLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        quantityLabel.setForeground(quantity > 0 ? new Color(40, 167, 69) : new Color(220, 53, 69));
+        JLabel categoryLabel = new JLabel(category);
+        categoryLabel.setFont(new Font("Segoe UI", Font.BOLD, 10));
+        categoryLabel.setForeground(Color.WHITE);
+        categoryLabel.setOpaque(true);
+        categoryLabel.setBackground(getCategoryColor(category));
+        categoryLabel.setBorder(BorderFactory.createEmptyBorder(4, 10, 4, 10));
+        
+        categoryBadge.add(categoryLabel);
+        
+        // Quantity indicator with icon
+        String quantityIcon = quantity > 5 ? "✓" : (quantity > 0 ? "!" : "✕");
+        Color quantityColor = quantity > 5 ? new Color(16, 185, 129) : 
+                             (quantity > 0 ? new Color(251, 146, 60) : new Color(239, 68, 68));
+        
+        JLabel quantityLabel = new JLabel(quantityIcon + " Còn " + quantity + " cuốn");
+        quantityLabel.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        quantityLabel.setForeground(quantityColor);
         quantityLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         
-        // No status label needed - all books are available for interaction
+        infoPanel.add(titleLabel);
+        infoPanel.add(Box.createVerticalStrut(6));
+        infoPanel.add(authorLabel);
+        infoPanel.add(Box.createVerticalStrut(8));
+        infoPanel.add(categoryBadge);
+        infoPanel.add(Box.createVerticalStrut(8));
+        infoPanel.add(quantityLabel);
         
-        // Button panel
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
+        // Modern action buttons
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
         buttonPanel.setOpaque(false);
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(12, 0, 0, 0));
         
-        // Favorite button
-        JButton favoriteBtn = new JButton("Yêu thích");
-        favoriteBtn.setBackground(new Color(255, 140, 0));
-        favoriteBtn.setForeground(Color.WHITE);
-        favoriteBtn.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        favoriteBtn.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
-        favoriteBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        favoriteBtn.setFocusPainted(false);
+        // Favorite button with icon
+        JButton favoriteBtn = createModernActionButton("❤️", new Color(239, 68, 68), new Color(220, 38, 38));
         favoriteBtn.setToolTipText("Thêm vào yêu thích");
         favoriteBtn.addActionListener(e -> addToFavorite(bookId));
         
+        // Info button
+        JButton infoBtn = createModernActionButton("ℹ️", new Color(59, 130, 246), new Color(37, 99, 235));
+        infoBtn.setToolTipText("Xem chi tiết");
+        infoBtn.addActionListener(e -> showBookDetails(bookId, title, author, category, quantity, coverImage));
+        
         // Borrow button
-        JButton borrowBtn = new JButton("+");
-        borrowBtn.setBackground(new Color(0, 123, 255));
-        borrowBtn.setForeground(Color.WHITE);
-        borrowBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        borrowBtn.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
-        borrowBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        borrowBtn.setFocusPainted(false);
-        borrowBtn.setToolTipText("Đăng ký mượn sách");
+        JButton borrowBtn = createModernActionButton("📥", new Color(16, 185, 129), new Color(5, 150, 105));
+        borrowBtn.setToolTipText("Đăng ký mượn");
         borrowBtn.setEnabled(quantity > 0);
+        if (quantity <= 0) {
+            borrowBtn.setBackground(new Color(156, 163, 175));
+        }
         borrowBtn.addActionListener(e -> borrowBook(bookId, title));
         
-        // Add hover effects
-        favoriteBtn.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                favoriteBtn.setBackground(new Color(255, 120, 0));
-            }
-            
-            @Override
-            public void mouseExited(MouseEvent e) {
-                favoriteBtn.setBackground(new Color(255, 140, 0));
-            }
-        });
-        
-        borrowBtn.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                if (borrowBtn.isEnabled()) {
-                    borrowBtn.setBackground(new Color(0, 103, 235));
-                }
-            }
-            
-            @Override
-            public void mouseExited(MouseEvent e) {
-                if (borrowBtn.isEnabled()) {
-                    borrowBtn.setBackground(new Color(0, 123, 255));
-                }
-            }
-        });
-        
         buttonPanel.add(favoriteBtn);
+        buttonPanel.add(infoBtn);
         buttonPanel.add(borrowBtn);
         
-        // Assemble panel
+        // Assemble card
         bookPanel.add(imagePanel);
-        bookPanel.add(Box.createVerticalStrut(10));
-        bookPanel.add(titleLabel);
-        bookPanel.add(Box.createVerticalStrut(5));
-        bookPanel.add(authorLabel);
-        bookPanel.add(Box.createVerticalStrut(3));
-        bookPanel.add(categoryLabel);
-        bookPanel.add(Box.createVerticalStrut(5));
-        bookPanel.add(quantityLabel);
-        bookPanel.add(Box.createVerticalStrut(10));
+        bookPanel.add(infoPanel);
         bookPanel.add(buttonPanel);
         
         return bookPanel;
+    }
+    
+    private JLabel createFallbackImageLabel(String category) {
+        JLabel label = new JLabel(getBookIcon(category), SwingConstants.CENTER);
+        label.setFont(new Font("Segoe UI Emoji", Font.BOLD, 48));
+        label.setForeground(getCategoryColor(category));
+        return label;
+    }
+    
+    private JButton createModernActionButton(String icon, Color baseColor, Color hoverColor) {
+        JButton button = new JButton(icon) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                Color currentColor = getModel().isRollover() && isEnabled() ? hoverColor : 
+                                   isEnabled() ? baseColor : new Color(156, 163, 175);
+                
+                // Shadow
+                if (isEnabled()) {
+                    g2d.setColor(new Color(0, 0, 0, 20));
+                    g2d.fillOval(2, 2, getWidth() - 4, getHeight() - 4);
+                }
+                
+                // Button circle
+                g2d.setColor(currentColor);
+                g2d.fillOval(0, 0, getWidth(), getHeight());
+                
+                // Text/Icon
+                g2d.setColor(getForeground());
+                g2d.setFont(getFont());
+                FontMetrics fm = g2d.getFontMetrics();
+                int x = (getWidth() - fm.stringWidth(getText())) / 2;
+                int y = (getHeight() + fm.getAscent() - fm.getDescent()) / 2;
+                g2d.drawString(getText(), x, y);
+            }
+        };
+        
+        button.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
+        button.setForeground(Color.WHITE);
+        button.setPreferredSize(new Dimension(42, 42));
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setContentAreaFilled(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        return button;
     }
 
     private void showFavoriteBooks() {
@@ -2227,26 +2618,12 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
         JLabel bookImageLabel;
         if (coverImage != null && !coverImage.trim().isEmpty()) {
             try {
-                java.net.URL imageUrl = new java.net.URL(coverImage);
-                ImageIcon originalIcon = new ImageIcon(imageUrl);
+                // ✨ SỬ DỤNG CACHE - Load ảnh siêu nhanh từ cache
+                ImageCacheManager cacheManager = ImageCacheManager.getInstance();
+                ImageIcon cachedIcon = cacheManager.getImage(coverImage, bookId, 214, 304);
                 
-                if (originalIcon.getIconWidth() > 0 && originalIcon.getIconHeight() > 0) {
-                    // Calculate dimensions to maintain aspect ratio without distortion
-                    int maxWidth = 214;  // 230 - 16 (8px padding each side)
-                    int maxHeight = 304; // 320 - 16 (8px padding each side)
-                    int originalWidth = originalIcon.getIconWidth();
-                    int originalHeight = originalIcon.getIconHeight();
-                    
-                    // Calculate scale factor to fit within bounds without distortion
-                    double scaleWidth = (double) maxWidth / originalWidth;
-                    double scaleHeight = (double) maxHeight / originalHeight;
-                    double scale = Math.min(scaleWidth, scaleHeight);
-                    
-                    int scaledWidth = (int) (originalWidth * scale);
-                    int scaledHeight = (int) (originalHeight * scale);
-                    
-                    Image scaledImage = originalIcon.getImage().getScaledInstance(scaledWidth, scaledHeight, Image.SCALE_SMOOTH);
-                    bookImageLabel = new JLabel(new ImageIcon(scaledImage), SwingConstants.CENTER);
+                if (cachedIcon != null && cachedIcon.getIconWidth() > 0) {
+                    bookImageLabel = new JLabel(cachedIcon, SwingConstants.CENTER);
                 } else {
                     String bookIcon = getBookIcon(category);
                     bookImageLabel = new JLabel(bookIcon, SwingConstants.CENTER);

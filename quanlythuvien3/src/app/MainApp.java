@@ -17,15 +17,11 @@ import java.sql.ResultSet;
 
 public class MainApp {
     public static void main(String[] args) {
-        // Kiểm tra server đã chạy chưa bằng cách thử kết nối (connect) thay vì bind cổng.
-        // Lợi ích: không chiếm cổng tạm thời và tránh race condition nhỏ khi bind/close.
         boolean serverRunning = false;
         try (Socket probe = new Socket()) {
-            // Thử kết nối tới localhost:12345 với timeout ngắn (500ms)
             probe.connect(new java.net.InetSocketAddress("localhost", 12345), 500);
             serverRunning = true;
         } catch (java.io.IOException e) {
-            // Không kết nối được => server chưa chạy
             serverRunning = false;
         }
 
@@ -43,26 +39,23 @@ public class MainApp {
             }, "LibraryServer-Starter").start();
         }
 
-        // Hiển thị giao diện đăng nhập hiện đại
+        // Hiển thị giao diện đăng nhập
         SwingUtilities.invokeLater(() -> {
             JFrame frame = new JFrame("Hệ thống quản lý thư viện");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setSize(450, 700);
-            frame.setMinimumSize(new Dimension(450, 650));
+            frame.setSize(500, 850);
+            frame.setMinimumSize(new Dimension(500, 750));
             frame.setResizable(false);
 
-            // Main panel with modern blue-purple gradient background
+            // Main panel with gradient background
             JPanel panel = new JPanel() {
                 @Override
                 protected void paintComponent(Graphics g) {
                     super.paintComponent(g);
                     Graphics2D g2d = (Graphics2D) g;
                     g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-                    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    
                     int w = getWidth(), h = getHeight();
-                    // Modern blue to purple gradient background
-                    GradientPaint gp = new GradientPaint(0, 0, new Color(64, 123, 255), 0, h, new Color(155, 81, 224));
+                    GradientPaint gp = new GradientPaint(0, 0, new Color(240, 248, 255), 0, h, new Color(230, 240, 250));
                     g2d.setPaint(gp);
                     g2d.fillRect(0, 0, w, h);
                 }
@@ -125,54 +118,27 @@ public class MainApp {
             headerPanel.add(Box.createVerticalStrut(5));
             headerPanel.add(subtitleLabel);
 
-            // Modern white card form panel with rounded corners and shadow
-            JPanel formPanel = new JPanel() {
-                @Override
-                protected void paintComponent(Graphics g) {
-                    super.paintComponent(g);
-                    Graphics2D g2d = (Graphics2D) g;
-                    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    
-                    int w = getWidth(), h = getHeight();
-                    int arc = 20; // Rounded corners
-                    
-                    // Draw shadow
-                    g2d.setColor(new Color(0, 0, 0, 30));
-                    g2d.fillRoundRect(4, 4, w-4, h-4, arc, arc);
-                    
-                    // Draw white card background
-                    g2d.setColor(Color.WHITE);
-                    g2d.fillRoundRect(0, 0, w-4, h-4, arc, arc);
-                }
-            };
+            // Form panel with modern styling
+            JPanel formPanel = new JPanel();
             formPanel.setOpaque(false);
-            formPanel.setBorder(BorderFactory.createEmptyBorder(40, 40, 40, 40));
+            formPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(200, 200, 200), 1),
+                BorderFactory.createEmptyBorder(30, 40, 30, 40)
+            ));
+            formPanel.setBackground(new Color(255, 255, 255, 220));
 
             JLabel lblRole = new JLabel("Vai trò:");
             lblRole.setForeground(new Color(52, 58, 64));
             lblRole.setFont(new Font("Segoe UI", Font.BOLD, 14));
             String[] roles = {"Người dùng", "Quản trị viên"};
-            JComboBox<String> cbRole = new JComboBox<String>(roles) {
-                @Override
-                protected void paintBorder(Graphics g) {
-                    Graphics2D g2d = (Graphics2D) g;
-                    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    
-                    int w = getWidth(), h = getHeight();
-                    if (hasFocus()) {
-                        g2d.setColor(new Color(64, 123, 255)); // Blue focus highlight
-                        g2d.setStroke(new BasicStroke(2));
-                    } else {
-                        g2d.setColor(new Color(220, 220, 220)); // Thin gray border
-                        g2d.setStroke(new BasicStroke(1));
-                    }
-                    g2d.drawRoundRect(0, 0, w-1, h-1, 8, 8);
-                }
-            };
+            JComboBox<String> cbRole = new JComboBox<>(roles);
             cbRole.setBackground(Color.WHITE);
             cbRole.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-            cbRole.setBorder(BorderFactory.createEmptyBorder(12, 16, 12, 30));
-            cbRole.setPreferredSize(new Dimension(280, 45));
+            cbRole.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(206, 212, 218), 1),
+                BorderFactory.createEmptyBorder(8, 12, 8, 12)
+            ));
+            cbRole.setPreferredSize(new Dimension(280, 40));
 
             // Add action listener to role ComboBox for automatic admin redirect
             cbRole.addActionListener(e -> {
@@ -193,64 +159,27 @@ public class MainApp {
             JLabel lblUser = new JLabel("Tên đăng nhập:");
             lblUser.setForeground(new Color(52, 58, 64));
             lblUser.setFont(new Font("Segoe UI", Font.BOLD, 14));
-            JTextField txtUser = new JTextField(20) {
-                @Override
-                protected void paintBorder(Graphics g) {
-                    Graphics2D g2d = (Graphics2D) g;
-                    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    
-                    int w = getWidth(), h = getHeight();
-                    if (hasFocus()) {
-                        g2d.setColor(new Color(64, 123, 255)); // Blue focus highlight
-                        g2d.setStroke(new BasicStroke(2));
-                    } else {
-                        g2d.setColor(new Color(220, 220, 220)); // Thin gray border
-                        g2d.setStroke(new BasicStroke(1));
-                    }
-                    g2d.drawRoundRect(0, 0, w-1, h-1, 8, 8);
-                }
-            };
-            txtUser.setBorder(BorderFactory.createEmptyBorder(12, 16, 12, 16));
+            JTextField txtUser = new JTextField(20);
+            txtUser.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(206, 212, 218), 1),
+                BorderFactory.createEmptyBorder(10, 12, 10, 12)
+            ));
             txtUser.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-            txtUser.setPreferredSize(new Dimension(280, 45));
-            txtUser.setBackground(Color.WHITE);
+            txtUser.setPreferredSize(new Dimension(280, 40));
 
             JLabel lblPass = new JLabel("Mật khẩu:");
             lblPass.setForeground(new Color(52, 58, 64));
             lblPass.setFont(new Font("Segoe UI", Font.BOLD, 14));
 
-            // Modern password panel with show/hide button
-            JPanel passPanel = new JPanel(new BorderLayout()) {
-                @Override
-                protected void paintBorder(Graphics g) {
-                    Graphics2D g2d = (Graphics2D) g;
-                    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    
-                    int w = getWidth(), h = getHeight();
-                    boolean focused = txtPass.hasFocus();
-                    if (focused) {
-                        g2d.setColor(new Color(64, 123, 255)); // Blue focus highlight
-                        g2d.setStroke(new BasicStroke(2));
-                    } else {
-                        g2d.setColor(new Color(220, 220, 220)); // Thin gray border
-                        g2d.setStroke(new BasicStroke(1));
-                    }
-                    g2d.drawRoundRect(0, 0, w-1, h-1, 8, 8);
-                }
-            };
+            // Password panel with show/hide button
+            JPanel passPanel = new JPanel(new BorderLayout());
             passPanel.setBackground(Color.WHITE);
-            passPanel.setPreferredSize(new Dimension(280, 45));
-            passPanel.setOpaque(true);
+            passPanel.setBorder(BorderFactory.createLineBorder(new Color(206, 212, 218), 1));
+            passPanel.setPreferredSize(new Dimension(280, 40));
             
-            final JPasswordField txtPass = new JPasswordField(20) {
-                @Override
-                protected void paintBorder(Graphics g) {
-                    // No border - handled by parent panel
-                }
-            };
-            txtPass.setBorder(BorderFactory.createEmptyBorder(12, 16, 12, 5));
+            final JPasswordField txtPass = new JPasswordField(20);
+            txtPass.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 5));
             txtPass.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-            txtPass.setBackground(Color.WHITE);
 
             final JToggleButton btnShowPass = new JToggleButton("Xem");
             btnShowPass.setFocusPainted(false);
@@ -287,119 +216,46 @@ public class MainApp {
                 }
             });
 
-            final boolean[] isHovered = {false}; // Simple hover state tracking
-            
-            JButton btnLogin = new JButton("ĐĂNG NHẬP") {
-                @Override
-                protected void paintComponent(Graphics g) {
-                    Graphics2D g2d = (Graphics2D) g;
-                    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    
-                    int w = getWidth(), h = getHeight();
-                    
-                    // Modern blue to purple gradient with hover effect
-                    Color startColor = isHovered[0] ? new Color(54, 113, 245) : new Color(64, 123, 255);
-                    Color endColor = isHovered[0] ? new Color(145, 71, 214) : new Color(155, 81, 224);
-                    GradientPaint gp = new GradientPaint(0, 0, startColor, 0, h, endColor);
-                    g2d.setPaint(gp);
-                    g2d.fillRoundRect(0, 0, w, h, 12, 12);
-                    
-                    // Draw text
-                    g2d.setColor(Color.WHITE);
-                    g2d.setFont(getFont());
-                    FontMetrics fm = g2d.getFontMetrics();
-                    int textX = (w - fm.stringWidth(getText())) / 2;
-                    int textY = (h + fm.getAscent()) / 2 - 2;
-                    g2d.drawString(getText(), textX, textY);
-                }
-                
-                @Override
-                protected void paintBorder(Graphics g) {
-                    // No border for modern button
-                }
-            };
-            btnLogin.setContentAreaFilled(false);
-            btnLogin.setBorderPainted(false);
+            JButton btnLogin = new JButton("ĐĂNG NHẬP");
+            btnLogin.setBackground(new Color(70, 130, 180));
             btnLogin.setForeground(Color.WHITE);
-            btnLogin.setFont(new Font("Segoe UI", Font.BOLD, 15));
-            btnLogin.setPreferredSize(new Dimension(280, 50));
+            btnLogin.setBorder(BorderFactory.createEmptyBorder(12, 20, 12, 20));
+            btnLogin.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            btnLogin.setPreferredSize(new Dimension(280, 45));
             btnLogin.setFocusPainted(false);
             btnLogin.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             btnLogin.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseEntered(MouseEvent e) {
-                    isHovered[0] = true;
-                    btnLogin.repaint();
+                    btnLogin.setBackground(new Color(60, 120, 170));
                 }
                 @Override
                 public void mouseExited(MouseEvent e) {
-                    isHovered[0] = false;
-                    btnLogin.repaint();
+                    btnLogin.setBackground(new Color(70, 130, 180));
                 }
             });
 
-            final boolean[] isRegisterHovered = {false}; // Simple hover state tracking
-            
-            JButton btnRegister = new JButton("ĐĂNG KÝ TÀI KHOẢN") {
-                @Override
-                protected void paintComponent(Graphics g) {
-                    Graphics2D g2d = (Graphics2D) g;
-                    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    
-                    int w = getWidth(), h = getHeight();
-                    
-                    if (isRegisterHovered[0]) {
-                        // Hover: filled gradient
-                        GradientPaint gp = new GradientPaint(0, 0, new Color(64, 123, 255), 0, h, new Color(155, 81, 224));
-                        g2d.setPaint(gp);
-                        g2d.fillRoundRect(0, 0, w, h, 12, 12);
-                        
-                        // White text
-                        g2d.setColor(Color.WHITE);
-                    } else {
-                        // Normal: white background with gradient border
-                        g2d.setColor(Color.WHITE);
-                        g2d.fillRoundRect(0, 0, w, h, 12, 12);
-                        
-                        // Gradient border
-                        g2d.setStroke(new BasicStroke(2));
-                        GradientPaint borderGp = new GradientPaint(0, 0, new Color(64, 123, 255), 0, h, new Color(155, 81, 224));
-                        g2d.setPaint(borderGp);
-                        g2d.drawRoundRect(1, 1, w-3, h-3, 12, 12);
-                        
-                        // Gradient text
-                        g2d.setPaint(new GradientPaint(0, 0, new Color(64, 123, 255), 0, h, new Color(155, 81, 224)));
-                    }
-                    
-                    // Draw text
-                    g2d.setFont(getFont());
-                    FontMetrics fm = g2d.getFontMetrics();
-                    int textX = (w - fm.stringWidth(getText())) / 2;
-                    int textY = (h + fm.getAscent()) / 2 - 2;
-                    g2d.drawString(getText(), textX, textY);
-                }
-                
-                @Override
-                protected void paintBorder(Graphics g) {
-                    // No border for modern button
-                }
-            };
-            btnRegister.setContentAreaFilled(false);
-            btnRegister.setBorderPainted(false);
+            JButton btnRegister = new JButton("ĐĂNG KÝ TÀI KHOẢN");
+            btnRegister.setBackground(Color.WHITE);
+            btnRegister.setForeground(new Color(70, 130, 180));
+            btnRegister.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(70, 130, 180), 2),
+                BorderFactory.createEmptyBorder(10, 20, 10, 20)
+            ));
             btnRegister.setFont(new Font("Segoe UI", Font.BOLD, 14));
-            btnRegister.setPreferredSize(new Dimension(280, 50));
+            btnRegister.setPreferredSize(new Dimension(280, 45));
             btnRegister.setFocusPainted(false);
             btnRegister.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             btnRegister.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseEntered(MouseEvent e) {
-                    isRegisterHovered[0] = true;
-                    btnRegister.repaint();
+                    btnRegister.setBackground(new Color(70, 130, 180));
+                    btnRegister.setForeground(Color.WHITE);
                 }
                 @Override
                 public void mouseExited(MouseEvent e) {
-                    isRegisterHovered[0] = false;
-                    btnRegister.repaint();
+                    btnRegister.setBackground(Color.WHITE);
+                    btnRegister.setForeground(new Color(70, 130, 180));
                 }
             });
 
@@ -431,39 +287,39 @@ public class MainApp {
                 formLayout.createSequentialGroup()
                     .addComponent(lblRole)
                     .addGap(5)
-                    .addComponent(cbRole, GroupLayout.PREFERRED_SIZE, 45, GroupLayout.PREFERRED_SIZE)
-                    .addGap(20)
-                    .addComponent(lblUser)
-                    .addGap(8)
-                    .addComponent(txtUser, GroupLayout.PREFERRED_SIZE, 45, GroupLayout.PREFERRED_SIZE)
-                    .addGap(20)
-                    .addComponent(lblPass)
-                    .addGap(8)
-                    .addComponent(passPanel, GroupLayout.PREFERRED_SIZE, 45, GroupLayout.PREFERRED_SIZE)
-                    .addGap(8)
-                    .addComponent(lblForgot)
-                    .addGap(20)
-                    .addComponent(lblMsg)
-                    .addGap(20)
-                    .addComponent(btnLogin, GroupLayout.PREFERRED_SIZE, 50, GroupLayout.PREFERRED_SIZE)
+                    .addComponent(cbRole, GroupLayout.PREFERRED_SIZE, 40, GroupLayout.PREFERRED_SIZE)
                     .addGap(15)
-                    .addComponent(btnRegister, GroupLayout.PREFERRED_SIZE, 50, GroupLayout.PREFERRED_SIZE)
+                    .addComponent(lblUser)
+                    .addGap(5)
+                    .addComponent(txtUser, GroupLayout.PREFERRED_SIZE, 40, GroupLayout.PREFERRED_SIZE)
+                    .addGap(15)
+                    .addComponent(lblPass)
+                    .addGap(5)
+                    .addComponent(passPanel, GroupLayout.PREFERRED_SIZE, 40, GroupLayout.PREFERRED_SIZE)
+                    .addGap(5)
+                    .addComponent(lblForgot)
+                    .addGap(15)
+                    .addComponent(lblMsg)
+                    .addGap(15)
+                    .addComponent(btnLogin, GroupLayout.PREFERRED_SIZE, 45, GroupLayout.PREFERRED_SIZE)
+                    .addGap(15)
+                    .addComponent(btnRegister, GroupLayout.PREFERRED_SIZE, 45, GroupLayout.PREFERRED_SIZE)
                     .addGap(10)
             );
 
-            // Main layout - centered modern card design
+            // Main layout
             layout.setHorizontalGroup(
                 layout.createParallelGroup(GroupLayout.Alignment.CENTER)
                     .addComponent(headerPanel)
-                    .addComponent(formPanel, GroupLayout.PREFERRED_SIZE, 380, GroupLayout.PREFERRED_SIZE)
+                    .addComponent(formPanel, GroupLayout.PREFERRED_SIZE, 400, GroupLayout.PREFERRED_SIZE)
             );
             layout.setVerticalGroup(
                 layout.createSequentialGroup()
-                    .addGap(30)
+                    .addGap(20)
                     .addComponent(headerPanel)
-                    .addGap(30)
+                    .addGap(20)
                     .addComponent(formPanel)
-                    .addGap(40)
+                    .addGap(30)
             );
 
             btnLogin.addActionListener(e -> {

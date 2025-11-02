@@ -519,13 +519,15 @@ public class BookManagerUI extends JFrame {
             ResultSet rs = conn.createStatement().executeQuery(
                 "SELECT id, title, author, publisher, year, category, quantity, cover_image FROM books");
             while (rs.next()) {
-                String coverUrl = rs.getString("cover_image");
+                String bookId = String.valueOf(rs.getInt("id"));
+                String coverPath = rs.getString("cover_image");
                 ImageIcon coverIcon = null;
-                if (coverUrl != null && !coverUrl.isEmpty()) {
+                
+                if (coverPath != null && !coverPath.isEmpty()) {
                     try {
-                        ImageIcon originalIcon = new ImageIcon(new URL(coverUrl));
-                        Image scaledImg = originalIcon.getImage().getScaledInstance(50, 70, Image.SCALE_SMOOTH);
-                        coverIcon = new ImageIcon(scaledImg);
+                        // ✨ SỬ DỤNG CACHE - Load ảnh cực nhanh
+                        ImageCacheManager cacheManager = ImageCacheManager.getInstance();
+                        coverIcon = cacheManager.getImage(coverPath, bookId, 50, 70);
                     } catch (Exception ex) {
                         coverIcon = null;
                     }
@@ -568,10 +570,13 @@ public class BookManagerUI extends JFrame {
             JOptionPane.showMessageDialog(this, "Vui lòng nhập đầy đủ thông tin!");
             return;
         }
+        
         try (Connection conn = getConn()) {
+            // Thêm sách trước để lấy ID
             PreparedStatement ps = conn.prepareStatement(
                 "INSERT INTO books(title, author, publisher, year, quantity, category, cover_image, description) " +
-                "VALUES(?,?,?,?,?,?,?,?)");
+                "VALUES(?,?,?,?,?,?,?,?)", 
+                java.sql.Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, title);
             ps.setString(2, author);
             ps.setString(3, publisher);
@@ -582,6 +587,32 @@ public class BookManagerUI extends JFrame {
             ps.setString(8, description);
             
             ps.executeUpdate();
+            
+            // ✨ TỰ ĐỘNG TẢI ẢNH VỀ SAU KHI THÊM SÁCH
+            if (!coverImage.isEmpty() && (coverImage.startsWith("http://") || coverImage.startsWith("https://"))) {
+                try {
+                    java.sql.ResultSet generatedKeys = ps.getGeneratedKeys();
+                    if (generatedKeys.next()) {
+                        String bookId = String.valueOf(generatedKeys.getInt(1));
+                        ImageCacheManager cacheManager = ImageCacheManager.getInstance();
+                        String localPath = cacheManager.downloadAndCacheImage(coverImage, bookId);
+                        
+                        // Cập nhật đường dẫn local vào database
+                        if (localPath != null) {
+                            PreparedStatement updatePs = conn.prepareStatement(
+                                "UPDATE books SET cover_image = ? WHERE id = ?");
+                            updatePs.setString(1, localPath);
+                            updatePs.setInt(2, Integer.parseInt(bookId));
+                            updatePs.executeUpdate();
+                            System.out.println("✅ Đã lưu đường dẫn ảnh local vào database");
+                        }
+                    }
+                } catch (Exception imgEx) {
+                    System.err.println("⚠️ Không thể tải ảnh: " + imgEx.getMessage());
+                    // Vẫn giữ URL gốc nếu tải ảnh thất bại
+                }
+            }
+            
             JOptionPane.showMessageDialog(this, "Thêm sách thành công!");
             loadBooks();
             clearAddForm();
