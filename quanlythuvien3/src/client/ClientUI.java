@@ -50,6 +50,11 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
     
     // Loading state để ngăn multiple clicks
     private volatile boolean isLoading = false;
+    
+    // Debounce timers to prevent excessive API calls
+    private Timer searchDebounceTimer;
+    private Timer filterDebounceTimer;
+    private static final int DEBOUNCE_DELAY = 500; // 500ms delay
 
     private static final String[] CATEGORIES = {
         "Tất cả",
@@ -296,9 +301,18 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
                 darkModeManager.removeDarkModeListener(this);
             }
             
-            // Stop timers
+            // Stop all timers
             if (refreshTimer != null && refreshTimer.isRunning()) {
                 refreshTimer.stop();
+            }
+            
+            // Stop debounce timers
+            if (searchDebounceTimer != null && searchDebounceTimer.isRunning()) {
+                searchDebounceTimer.stop();
+            }
+            
+            if (filterDebounceTimer != null && filterDebounceTimer.isRunning()) {
+                filterDebounceTimer.stop();
             }
             
             // Stop keep-alive task
@@ -469,30 +483,59 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
     }
     
     private JPanel createModernUserSection() {
-        JPanel userSection = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
+        // Use BoxLayout for better control and prevent overlapping
+        JPanel userSection = new JPanel();
+        userSection.setLayout(new BoxLayout(userSection, BoxLayout.X_AXIS));
         userSection.setOpaque(false);
         
-        // Notification button with badge
-        btnNotification = new JButton("🔔");
-        btnNotification.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 20));
-        btnNotification.setPreferredSize(new Dimension(46, 46));
-        btnNotification.setBackground(new Color(255, 255, 255, 25));
-        btnNotification.setForeground(Color.WHITE);
-        btnNotification.setBorder(BorderFactory.createEmptyBorder());
-        btnNotification.setFocusPainted(false);
-        btnNotification.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnNotification.setContentAreaFilled(false);
-        btnNotification.setOpaque(true);
+        // User profile panel with modern card design - CREATE FIRST
+        JPanel userProfilePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        userProfilePanel.setBackground(new Color(255, 255, 255, 95));
+        userProfilePanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(255, 255, 255, 60), 1),
+            BorderFactory.createEmptyBorder(8, 12, 8, 12)
+        ));
+        userProfilePanel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        userProfilePanel.setPreferredSize(new Dimension(200, 46));
+        userProfilePanel.setMaximumSize(new Dimension(250, 46)); // Đủ rộng cho text
         
-        // Hover effect for notification button
-        btnNotification.addMouseListener(new MouseAdapter() {
+        // Avatar with circular border
+        lblAvatar = new JLabel();
+        lblAvatar.setPreferredSize(new Dimension(32, 32)); // Tăng lên 32x32 để rõ hơn
+        lblAvatar.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        lblAvatar.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.WHITE, 2),
+            BorderFactory.createEmptyBorder(0, 0, 0, 0)
+        ));
+        lblAvatar.setOpaque(false);
+        lblAvatar.setHorizontalAlignment(SwingConstants.CENTER);
+        lblAvatar.setVerticalAlignment(SwingConstants.CENTER);
+        
+        // User name label
+        lblUser = new JLabel("Chưa đăng nhập");
+        lblUser.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblUser.setForeground(Color.WHITE);
+        lblUser.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        lblUser.setOpaque(false);
+        
+        userProfilePanel.add(lblAvatar);
+        userProfilePanel.add(lblUser);
+        
+        // Click listener cho user profile
+        userProfilePanel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                showUserProfile();
+            }
+            
             @Override
             public void mouseEntered(MouseEvent e) {
-                btnNotification.setBackground(new Color(255, 255, 255, 40));
+                userProfilePanel.setBackground(new Color(255, 255, 255, 110));
             }
+            
             @Override
             public void mouseExited(MouseEvent e) {
-                btnNotification.setBackground(new Color(255, 255, 255, 25));
+                userProfilePanel.setBackground(new Color(255, 255, 255, 95));
             }
         });
         
@@ -500,6 +543,8 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
         JButton btnDarkMode = new JButton(darkModeManager != null && darkModeManager.isDarkMode() ? "☀️" : "🌙");
         btnDarkMode.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 18));
         btnDarkMode.setPreferredSize(new Dimension(46, 46));
+        btnDarkMode.setMaximumSize(new Dimension(46, 46));
+        btnDarkMode.setMinimumSize(new Dimension(46, 46));
         btnDarkMode.setBackground(new Color(255, 255, 255, 25));
         btnDarkMode.setForeground(Color.WHITE);
         btnDarkMode.setBorder(BorderFactory.createEmptyBorder());
@@ -507,6 +552,11 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
         btnDarkMode.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnDarkMode.setContentAreaFilled(false);
         btnDarkMode.setOpaque(true);
+        
+        // Remove old listeners to prevent duplication
+        for (MouseListener ml : btnDarkMode.getMouseListeners()) {
+            btnDarkMode.removeMouseListener(ml);
+        }
         
         btnDarkMode.addMouseListener(new MouseAdapter() {
             @Override
@@ -526,55 +576,61 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
             }
         });
         
-        // User profile panel with modern card design
-        JPanel userProfilePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        userProfilePanel.setBackground(new Color(255, 255, 255, 95));
-        userProfilePanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(255, 255, 255, 60), 1),
-            BorderFactory.createEmptyBorder(8, 14, 8, 14)
-        ));
-        userProfilePanel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        // Notification button with badge - CHỈ KHỞI TẠO 1 LẦN
+        if (btnNotification == null) {
+            btnNotification = new JButton("🔔");
+            btnNotification.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 20));
+            btnNotification.setPreferredSize(new Dimension(46, 46));
+            btnNotification.setMaximumSize(new Dimension(46, 46));
+            btnNotification.setMinimumSize(new Dimension(46, 46));
+            btnNotification.setBackground(new Color(255, 255, 255, 25));
+            btnNotification.setForeground(Color.WHITE);
+            btnNotification.setBorder(BorderFactory.createEmptyBorder());
+            btnNotification.setFocusPainted(false);
+            btnNotification.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            btnNotification.setContentAreaFilled(false);
+            btnNotification.setOpaque(true);
+            btnNotification.setToolTipText("Xem thông báo");
+            
+            // Add action listener
+            btnNotification.addActionListener(e -> showNotifications());
+        }
         
-        // Avatar with circular border
-        lblAvatar = new JLabel();
-        lblAvatar.setPreferredSize(new Dimension(32, 32));
-        lblAvatar.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        lblAvatar.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(Color.WHITE, 2),
-            BorderFactory.createEmptyBorder(0, 0, 0, 0)
-        ));
-        lblAvatar.setOpaque(false);
+        // Remove old mouse listeners để tránh duplicate
+        for (MouseListener ml : btnNotification.getMouseListeners()) {
+            if (ml instanceof MouseAdapter) {
+                btnNotification.removeMouseListener(ml);
+            }
+        }
         
-        // User name label
-        lblUser = new JLabel("Chưa đăng nhập");
-        lblUser.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        lblUser.setForeground(Color.WHITE);
-        lblUser.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        lblUser.setOpaque(false);
-        
-        userProfilePanel.add(lblAvatar);
-        userProfilePanel.add(lblUser);
-        
-        // Hover effect for user profile
-        userProfilePanel.addMouseListener(new MouseAdapter() {
+        // Hover effect for notification button
+        btnNotification.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
-                userProfilePanel.setBackground(new Color(255, 255, 255, 110));
+                btnNotification.setBackground(new Color(255, 255, 255, 40));
             }
             @Override
             public void mouseExited(MouseEvent e) {
-                userProfilePanel.setBackground(new Color(255, 255, 255, 95));
+                btnNotification.setBackground(new Color(255, 255, 255, 25));
             }
         });
         
-        userSection.add(btnNotification);
-        userSection.add(btnDarkMode);
+        // Add components with proper spacing - ORDER: Profile, DarkMode, Notification
         userSection.add(userProfilePanel);
+        userSection.add(Box.createRigidArea(new Dimension(12, 0))); // 12px spacing
+        userSection.add(btnDarkMode);
+        userSection.add(Box.createRigidArea(new Dimension(12, 0))); // 12px spacing
+        userSection.add(btnNotification);
         
         return userSection;
     }
     
-    private JPanel createTopPanel() {
+    /**
+     * DEPRECATED - Use createModernTopPanel() instead
+     * This method is kept for reference only and should not be called
+     */
+    @Deprecated
+    private JPanel createTopPanel_DEPRECATED() {
         JPanel topPanel = new JPanel(new BorderLayout(10, 10));
         topPanel.setOpaque(false);
         
@@ -999,12 +1055,18 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
     }
     
     private void addEventListeners() {
-        // Search functionality
+        // Search functionality - với debounce cho các trường nhập liệu
         btnSearch.addActionListener(e -> refreshBookDisplay());
         txtSearch.addActionListener(e -> refreshBookDisplay());
-        txtAuthor.addActionListener(e -> refreshBookDisplay());
-        txtPublisher.addActionListener(e -> refreshBookDisplay());
-        cbCategory.addActionListener(e -> refreshBookDisplay());
+        
+        // Add debounced listeners for filter fields
+        addDebouncedListener(txtAuthor);
+        addDebouncedListener(txtPublisher);
+        
+        cbCategory.addActionListener(e -> {
+            // Debounce cho category change
+            debounceSearch(() -> refreshBookDisplay());
+        });
         
         // Navigation buttons
         btnFavorite.addActionListener(e -> showFavoriteBooks());
@@ -1023,41 +1085,21 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
     
     private void setupSearchSuggestions() {
         suggestPopup = new JPopupMenu();
+        
+        // Add debounced key listener for search suggestions
         txtSearch.addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e) {
                 String keyword = txtSearch.getText().trim();
-                suggestPopup.setVisible(false);
                 
                 // Skip if placeholder text or too short
-                if (keyword.length() < 2 || "Nhập tên sách hoặc tác giả...".equals(keyword)) return;
-                
-                suggestPopup.removeAll();
-                try (Connection conn = DriverManager.getConnection("jdbc:sqlite:C:/data/library.db?busy_timeout=30000")) {
-                    PreparedStatement ps = conn.prepareStatement(
-                        "SELECT DISTINCT title FROM books WHERE title LIKE ? LIMIT 8");
-                    ps.setString(1, "%" + keyword + "%");
-                    ResultSet rs = ps.executeQuery();
-                    
-                    boolean hasSuggestions = false;
-                    while (rs.next()) {
-                        String title = rs.getString("title");
-                        JMenuItem item = new JMenuItem(title);
-                        item.addActionListener(ev -> {
-                            txtSearch.setText(title);
-                            suggestPopup.setVisible(false);
-                            refreshBookDisplay();
-                        });
-                        suggestPopup.add(item);
-                        hasSuggestions = true;
-                    }
-                    
-                    if (hasSuggestions) {
-                        suggestPopup.show(txtSearch, 0, txtSearch.getHeight());
-                    }
-                } catch (Exception ex) {
-                    // Ignore suggestion errors
+                if (keyword.length() < 2 || "Nhập tên sách hoặc tác giả...".equals(keyword)) {
+                    suggestPopup.setVisible(false);
+                    return;
                 }
+                
+                // Debounce suggestions để tránh gọi DB liên tục
+                debounceSuggestions(keyword);
             }
         });
         
@@ -1070,6 +1112,94 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
                 timer.start();
             }
         });
+    }
+    
+    /**
+     * Debounce search suggestions để tránh truy vấn database liên tục
+     */
+    private void debounceSuggestions(String keyword) {
+        if (searchDebounceTimer != null) {
+            searchDebounceTimer.stop();
+        }
+        
+        searchDebounceTimer = new Timer(300, e -> {
+            showSearchSuggestions(keyword);
+        });
+        searchDebounceTimer.setRepeats(false);
+        searchDebounceTimer.start();
+    }
+    
+    /**
+     * Show search suggestions from database
+     */
+    private void showSearchSuggestions(String keyword) {
+        suggestPopup.removeAll();
+        
+        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:C:/data/library.db?busy_timeout=30000")) {
+            PreparedStatement ps = conn.prepareStatement(
+                "SELECT DISTINCT title FROM books WHERE title LIKE ? LIMIT 8");
+            ps.setString(1, "%" + keyword + "%");
+            ResultSet rs = ps.executeQuery();
+            
+            boolean hasSuggestions = false;
+            while (rs.next()) {
+                String title = rs.getString("title");
+                JMenuItem item = new JMenuItem(title);
+                item.addActionListener(ev -> {
+                    txtSearch.setText(title);
+                    suggestPopup.setVisible(false);
+                    refreshBookDisplay();
+                });
+                suggestPopup.add(item);
+                hasSuggestions = true;
+            }
+            
+            if (hasSuggestions) {
+                suggestPopup.show(txtSearch, 0, txtSearch.getHeight());
+            } else {
+                suggestPopup.setVisible(false);
+            }
+        } catch (Exception ex) {
+            // Ignore suggestion errors
+            System.err.println("Error loading suggestions: " + ex.getMessage());
+        }
+    }
+    
+    /**
+     * Add debounced document listener to text field
+     */
+    private void addDebouncedListener(JTextField textField) {
+        textField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                debounceSearch(() -> refreshBookDisplay());
+            }
+            
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                debounceSearch(() -> refreshBookDisplay());
+            }
+            
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                debounceSearch(() -> refreshBookDisplay());
+            }
+        });
+    }
+    
+    /**
+     * Debounce search/filter to prevent excessive API/DB calls
+     */
+    private void debounceSearch(Runnable action) {
+        if (filterDebounceTimer != null) {
+            filterDebounceTimer.stop();
+        }
+        
+        filterDebounceTimer = new Timer(DEBOUNCE_DELAY, e -> {
+            action.run();
+        });
+        filterDebounceTimer.setRepeats(false);
+        filterDebounceTimer.start();
     }
 
 
@@ -2944,29 +3074,36 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
         System.out.println("🔵 Setting default avatar");
         // Create a simple default avatar icon
         lblAvatar.setIcon(createDefaultAvatarIcon());
-        lblAvatar.setToolTipText("Click để xem thông tin cá nhân - Default Avatar");
+        lblAvatar.setToolTipText("Click để xem thông tin cá nhân");
         lblAvatar.repaint();
+        
+        // Force parent panel to repaint
+        if (lblAvatar.getParent() != null) {
+            lblAvatar.getParent().revalidate();
+            lblAvatar.getParent().repaint();
+        }
         System.out.println("✅ Default avatar set successfully");
     }
     
     private ImageIcon createDefaultAvatarIcon() {
-        // Create a simple circular default avatar
-        int size = 28;
+        // Avatar size should match lblAvatar preferredSize
+        int size = 32;
         java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2d = image.createGraphics();
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
         
         // Choose colors based on Dark Mode
         Color bgColor1, bgColor2, borderColor, textColor;
         if (darkModeManager != null && darkModeManager.isDarkMode()) {
             bgColor1 = new Color(88, 166, 255);  // Bright blue
             bgColor2 = new Color(74, 144, 226);  // Darker blue
-            borderColor = new Color(88, 166, 255, 180);
+            borderColor = new Color(88, 166, 255, 200);
             textColor = Color.WHITE;
         } else {
             bgColor1 = new Color(52, 152, 219);  // Original blue
             bgColor2 = new Color(41, 128, 185);  // Original darker blue
-            borderColor = new Color(255, 255, 255, 150);
+            borderColor = new Color(255, 255, 255, 200);
             textColor = Color.WHITE;
         }
         
@@ -3246,6 +3383,11 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
      */
     private void updateSearchButtonColors() {
         if (btnSearch == null) return;
+        
+        // Remove all existing mouse listeners to prevent duplicates
+        for (MouseListener ml : btnSearch.getMouseListeners()) {
+            btnSearch.removeMouseListener(ml);
+        }
         
         if (darkModeManager != null && darkModeManager.isDarkMode()) {
             // Dark Mode colors
@@ -3563,12 +3705,13 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
                         return;
                     }
                 } else {
-                    System.out.println("🌐 Assuming web URL (adding http): " + avatarUrl);
+                    // Try to load as web URL (without cache for avatar)
+                    System.out.println("🌐 Assuming web URL (trying https first): " + avatarUrl);
                     try {
                         URL url = new URL("https://" + avatarUrl);
                         icon = new ImageIcon(url);
                     } catch (Exception e1) {
-                        System.out.println("🔄 Trying with http: " + avatarUrl);
+                        System.out.println("🔄 HTTPS failed, trying with http: " + avatarUrl);
                         URL url = new URL("http://" + avatarUrl);
                         icon = new ImageIcon(url);
                     }
@@ -3583,35 +3726,49 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
                 
                 System.out.println("✅ Image loaded successfully: " + icon.getIconWidth() + "x" + icon.getIconHeight());
                 
-                // Resize image to fit avatar label
+                // Resize image to fit avatar label (32x32 for consistency)
+                final int AVATAR_SIZE = 32;
                 Image img = icon.getImage();
-                Image scaledImg = img.getScaledInstance(28, 28, Image.SCALE_SMOOTH);
+                Image scaledImg = img.getScaledInstance(AVATAR_SIZE, AVATAR_SIZE, Image.SCALE_SMOOTH);
                 
                 // Create circular avatar with border
-                java.awt.image.BufferedImage circularImage = new java.awt.image.BufferedImage(28, 28, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+                java.awt.image.BufferedImage circularImage = new java.awt.image.BufferedImage(
+                    AVATAR_SIZE, AVATAR_SIZE, java.awt.image.BufferedImage.TYPE_INT_ARGB);
                 Graphics2D g2d = circularImage.createGraphics();
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
                 
                 // Create circular clip
-                g2d.setClip(new java.awt.geom.Ellipse2D.Float(0, 0, 28, 28));
+                g2d.setClip(new java.awt.geom.Ellipse2D.Float(0, 0, AVATAR_SIZE, AVATAR_SIZE));
                 g2d.drawImage(scaledImg, 0, 0, null);
                 
                 // Draw border with better visibility
                 g2d.setClip(null);
                 if (darkModeManager != null && darkModeManager.isDarkMode()) {
-                    g2d.setColor(new Color(88, 166, 255, 150)); // Blue border in dark mode
+                    g2d.setColor(new Color(88, 166, 255, 200)); // Blue border in dark mode
                 } else {
-                    g2d.setColor(new Color(0, 123, 255, 150)); // Blue border in light mode
+                    g2d.setColor(new Color(0, 123, 255, 200)); // Blue border in light mode
                 }
-                g2d.setStroke(new BasicStroke(2.0f));
-                g2d.drawOval(1, 1, 25, 25);
+                g2d.setStroke(new BasicStroke(2.5f)); // Thicker border
+                g2d.drawOval(1, 1, AVATAR_SIZE-3, AVATAR_SIZE-3);
                 
                 g2d.dispose();
                 
+                final ImageIcon finalIcon = new ImageIcon(circularImage);
+                
                 SwingUtilities.invokeLater(() -> {
-                    lblAvatar.setIcon(new ImageIcon(circularImage));
-                    lblAvatar.setToolTipText("Click để xem thông tin cá nhân - Avatar loaded from: " + avatarUrl);
+                    lblAvatar.setIcon(finalIcon);
+                    lblAvatar.setToolTipText("Click để xem thông tin cá nhân");
+                    lblAvatar.revalidate();
                     lblAvatar.repaint();
+                    
+                    // Force parent panel to repaint
+                    if (lblAvatar.getParent() != null) {
+                        lblAvatar.getParent().revalidate();
+                        lblAvatar.getParent().repaint();
+                    }
+                    
                     System.out.println("🎉 Avatar set successfully!");
                 });
                 
