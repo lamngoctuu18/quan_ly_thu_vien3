@@ -464,6 +464,22 @@ public class BorrowRequestManagerUI extends JPanel {
     
     private void updateRequestStatus(int requestId, String status, String notes) {
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:C:/data/library.db?busy_timeout=30000")) {
+            // Get user_id and book_title for notification
+            String selectQuery = "SELECT br.user_id, b.title " +
+                "FROM borrow_requests br " +
+                "JOIN books b ON br.book_id = b.id " +
+                "WHERE br.id = ?";
+            PreparedStatement selectPs = conn.prepareStatement(selectQuery);
+            selectPs.setInt(1, requestId);
+            ResultSet rs = selectPs.executeQuery();
+            
+            int userId = -1;
+            String bookTitle = "";
+            if (rs.next()) {
+                userId = rs.getInt("user_id");
+                bookTitle = rs.getString("title");
+            }
+            
             String updateQuery = "UPDATE borrow_requests " +
                 "SET status = ?, admin_notes = ?, approved_date = ? " +
                 "WHERE id = ?";
@@ -477,9 +493,25 @@ public class BorrowRequestManagerUI extends JPanel {
             int rowsUpdated = ps.executeUpdate();
             
             if (rowsUpdated > 0) {
-                // If approved, actually create the borrow record
-                if ("APPROVED".equals(status)) {
-                    createBorrowRecord(requestId);
+                // Create notification for user
+                if (userId != -1) {
+                    if ("APPROVED".equals(status)) {
+                        NotificationUI.addNotification(
+                            userId, 
+                            "borrow_approved", 
+                            "Yêu cầu mượn sách được duyệt",
+                            "Yêu cầu mượn sách '" + bookTitle + "' của bạn đã được chấp nhận. " + notes
+                        );
+                        // If approved, actually create the borrow record
+                        createBorrowRecord(requestId);
+                    } else if ("REJECTED".equals(status)) {
+                        NotificationUI.addNotification(
+                            userId, 
+                            "borrow_rejected", 
+                            "Yêu cầu mượn sách bị từ chối",
+                            "Yêu cầu mượn sách '" + bookTitle + "' của bạn đã bị từ chối. Lý do: " + notes
+                        );
+                    }
                 }
                 
                 JOptionPane.showMessageDialog(this, 

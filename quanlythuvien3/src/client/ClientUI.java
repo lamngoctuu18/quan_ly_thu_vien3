@@ -1426,59 +1426,82 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
     
     private void showBorrowRequestDialog(String bookId, String title) {
         JDialog dialog = new JDialog(this, "Đăng ký mượn sách", true);
-        dialog.setSize(600, 500);
+        dialog.setSize(750, 620);
         dialog.setLocationRelativeTo(this);
+        dialog.setUndecorated(true);
         
-        // Main panel with gradient background
-        JPanel mainPanel = new JPanel(new BorderLayout(15, 15));
-        mainPanel.setBackground(new Color(240, 248, 255));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        // Main container with modern card design
+        JPanel containerPanel = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Gradient background
+                GradientPaint gradient = new GradientPaint(
+                    0, 0, new Color(59, 130, 246),
+                    0, getHeight(), new Color(37, 99, 235)
+                );
+                g2d.setPaint(gradient);
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
+            }
+        };
+        containerPanel.setOpaque(false);
+        containerPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(59, 130, 246), 3),
+            BorderFactory.createEmptyBorder(3, 3, 3, 3)
+        ));
         
-        // Header
+        // Inner white panel
+        JPanel mainPanel = new JPanel(new BorderLayout(0, 0));
+        mainPanel.setBackground(Color.WHITE);
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(30, 40, 30, 40));
+        
+        // Header Panel
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBackground(Color.WHITE);
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 25, 0));
+        
         JLabel headerLabel = new JLabel("ĐĂNG KÝ MƯỢN SÁCH", SwingConstants.CENTER);
-        headerLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        headerLabel.setForeground(new Color(0, 123, 255));
-        headerLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
+        headerLabel.setFont(new Font("Segoe UI", Font.BOLD, 26));
+        headerLabel.setForeground(new Color(37, 99, 235));
         
-        // Form panel
-        JPanel formPanel = new JPanel(new GridBagLayout());
-        formPanel.setOpaque(false);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 8, 8, 8);
-        gbc.anchor = GridBagConstraints.WEST;
+        JLabel subHeaderLabel = new JLabel("Vui lòng điền đầy đủ thông tin bên dưới", SwingConstants.CENTER);
+        subHeaderLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        subHeaderLabel.setForeground(new Color(107, 114, 128));
         
-        // Book info
-        gbc.gridx = 0; gbc.gridy = 0;
-        formPanel.add(createStyledLabel("Tên sách:"), gbc);
-        gbc.gridx = 1;
-        JLabel bookTitleLabel = new JLabel(title);
-        bookTitleLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        bookTitleLabel.setForeground(new Color(0, 123, 255));
-        formPanel.add(bookTitleLabel, gbc);
+        headerPanel.add(headerLabel, BorderLayout.NORTH);
+        headerPanel.add(subHeaderLabel, BorderLayout.CENTER);
         
-        // Borrower info
-        gbc.gridx = 0; gbc.gridy = 1;
-        formPanel.add(createStyledLabel("Người mượn:"), gbc);
-        gbc.gridx = 1;
-        JLabel borrowerLabel = new JLabel(lblUser.getText().replace("Xin chào, ", ""));
-        borrowerLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        formPanel.add(borrowerLabel, gbc);
+        // Form panel with modern design
+        JPanel formPanel = new JPanel();
+        formPanel.setLayout(new BoxLayout(formPanel, BoxLayout.Y_AXIS));
+        formPanel.setBackground(Color.WHITE);
+        formPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 20, 0));
         
-        // Borrow date
-        gbc.gridx = 0; gbc.gridy = 2;
-        formPanel.add(createStyledLabel("Ngày mượn:"), gbc);
-        gbc.gridx = 1;
-        JLabel borrowDateLabel = new JLabel(java.time.LocalDate.now().toString());
-        borrowDateLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        formPanel.add(borrowDateLabel, gbc);
+        // Create info rows
+        formPanel.add(createModernInfoRow("Tên sách:", title, new Color(37, 99, 235), true));
+        formPanel.add(Box.createVerticalStrut(18));
         
-        // Return date picker
-        gbc.gridx = 0; gbc.gridy = 3;
-        formPanel.add(createStyledLabel("Ngày trả dự kiến:"), gbc);
-        gbc.gridx = 1;
+        formPanel.add(createModernInfoRow("Người mượn:", lblUser.getText().replace("Xin chào, ", ""), 
+            new Color(55, 65, 81), false));
+        formPanel.add(Box.createVerticalStrut(18));
+        
+        formPanel.add(createModernInfoRow("Ngày mượn:", java.time.LocalDate.now().toString(), 
+            new Color(55, 65, 81), false));
+        formPanel.add(Box.createVerticalStrut(18));
+        
+        // Return date section
+        JPanel returnDatePanel = new JPanel(new BorderLayout(0, 8));
+        returnDatePanel.setBackground(Color.WHITE);
+        returnDatePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
+        
+        JLabel returnDateLabel = new JLabel("Ngày trả dự kiến:");
+        returnDateLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        returnDateLabel.setForeground(new Color(31, 41, 55));
+        
         JComboBox<String> returnDateCombo = new JComboBox<>();
-        
-        // Add more reasonable borrowing periods (7, 14, 21, 30 days)
         int[] borrowDays = {7, 14, 21, 30};
         String[] labels = {"1 tuần", "2 tuần", "3 tuần", "1 tháng"};
         
@@ -1487,62 +1510,175 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
             returnDateCombo.addItem(returnDate.toString() + " (" + labels[i] + ")");
         }
         
-        // Set default to 14 days (2 tuần)
         returnDateCombo.setSelectedIndex(1);
-        returnDateCombo.setPreferredSize(new Dimension(250, 35));
         returnDateCombo.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        formPanel.add(returnDateCombo, gbc);
+        returnDateCombo.setBackground(Color.WHITE);
+        returnDateCombo.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(209, 213, 219), 1, true),
+            BorderFactory.createEmptyBorder(10, 12, 10, 12)
+        ));
+        returnDateCombo.setPreferredSize(new Dimension(0, 45));
+        returnDateCombo.setFocusable(false);
         
-        // Notes
-        gbc.gridx = 0; gbc.gridy = 4;
-        formPanel.add(createStyledLabel("Ghi chú:"), gbc);
-        gbc.gridx = 1; gbc.fill = GridBagConstraints.BOTH;
+        returnDatePanel.add(returnDateLabel, BorderLayout.NORTH);
+        returnDatePanel.add(returnDateCombo, BorderLayout.CENTER);
+        
+        formPanel.add(returnDatePanel);
+        formPanel.add(Box.createVerticalStrut(18));
+        
+        // Notes section
+        JPanel notesPanel = new JPanel(new BorderLayout(0, 8));
+        notesPanel.setBackground(Color.WHITE);
+        notesPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 130));
+        
+        JLabel notesLabel = new JLabel("Ghi chú:");
+        notesLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        notesLabel.setForeground(new Color(31, 41, 55));
+        
         JTextArea notesArea = new JTextArea(4, 20);
         notesArea.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         notesArea.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(206, 212, 218), 1),
-            BorderFactory.createEmptyBorder(8, 12, 8, 12)
+            BorderFactory.createLineBorder(new Color(209, 213, 219), 1),
+            BorderFactory.createEmptyBorder(10, 12, 10, 12)
         ));
         notesArea.setLineWrap(true);
         notesArea.setWrapStyleWord(true);
+        notesArea.setBackground(new Color(249, 250, 251));
+        
         JScrollPane notesScroll = new JScrollPane(notesArea);
-        notesScroll.setPreferredSize(new Dimension(300, 100));
-        configureSmoothScrolling(notesScroll); // Apply smooth scrolling
-        formPanel.add(notesScroll, gbc);
+        notesScroll.setBorder(BorderFactory.createLineBorder(new Color(209, 213, 219), 1));
+        notesScroll.setPreferredSize(new Dimension(0, 90));
+        configureSmoothScrolling(notesScroll);
         
-        // Button panel
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setOpaque(false);
+        notesPanel.add(notesLabel, BorderLayout.NORTH);
+        notesPanel.add(notesScroll, BorderLayout.CENTER);
         
-        JButton submitBtn = new JButton("GỬI ĐĂNG KÝ");
-        submitBtn.setPreferredSize(new Dimension(140, 40));
-        submitBtn.setBackground(new Color(40, 167, 69));
-        submitBtn.setForeground(Color.WHITE);
-        submitBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        submitBtn.setFocusPainted(false);
+        formPanel.add(notesPanel);
+        
+        // Button panel with modern design
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
+        buttonPanel.setBackground(Color.WHITE);
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
+        
+        JButton cancelBtn = createModernButton("HỦY", new Color(156, 163, 175), new Color(107, 114, 128));
+        cancelBtn.setPreferredSize(new Dimension(110, 45));
+        cancelBtn.addActionListener(e -> dialog.dispose());
+        
+        JButton submitBtn = createModernButton("GỬI ĐĂNG KÝ", new Color(16, 185, 129), new Color(5, 150, 105));
+        submitBtn.setPreferredSize(new Dimension(150, 45));
         submitBtn.addActionListener(e -> {
             String returnDate = returnDateCombo.getSelectedItem().toString().split(" ")[0];
             String notes = notesArea.getText().trim();
             submitBorrowRequest(bookId, returnDate, notes, dialog);
         });
         
-        JButton cancelBtn = new JButton("HỦY");
-        cancelBtn.setPreferredSize(new Dimension(100, 40));
-        cancelBtn.setBackground(new Color(108, 117, 125));
-        cancelBtn.setForeground(Color.WHITE);
-        cancelBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        cancelBtn.setFocusPainted(false);
-        cancelBtn.addActionListener(e -> dialog.dispose());
-        
-        buttonPanel.add(submitBtn);
         buttonPanel.add(cancelBtn);
+        buttonPanel.add(submitBtn);
         
-        mainPanel.add(headerLabel, BorderLayout.NORTH);
+        // Add all panels to main
+        mainPanel.add(headerPanel, BorderLayout.NORTH);
         mainPanel.add(formPanel, BorderLayout.CENTER);
         mainPanel.add(buttonPanel, BorderLayout.SOUTH);
         
-        dialog.add(mainPanel);
+        containerPanel.add(mainPanel, BorderLayout.CENTER);
+        dialog.add(containerPanel);
+        
+        // Make dialog draggable
+        final Point[] dragOffset = new Point[1];
+        headerPanel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                dragOffset[0] = e.getPoint();
+            }
+        });
+        headerPanel.addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                Point current = dialog.getLocationOnScreen();
+                dialog.setLocation(current.x + e.getX() - dragOffset[0].x, 
+                                  current.y + e.getY() - dragOffset[0].y);
+            }
+        });
+        
         dialog.setVisible(true);
+    }
+    
+    /**
+     * Tạo info row hiện đại với label và value
+     */
+    private JPanel createModernInfoRow(String label, String value, Color valueColor, boolean isBold) {
+        JPanel row = new JPanel(new BorderLayout(0, 6));
+        row.setBackground(Color.WHITE);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
+        
+        JLabel lblLabel = new JLabel(label);
+        lblLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblLabel.setForeground(new Color(31, 41, 55));
+        
+        JLabel lblValue = new JLabel("<html><div style='width:500px'>" + value + "</div></html>");
+        lblValue.setFont(new Font("Segoe UI", isBold ? Font.BOLD : Font.PLAIN, 14));
+        lblValue.setForeground(valueColor);
+        lblValue.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(229, 231, 235), 1, true),
+            BorderFactory.createEmptyBorder(10, 12, 10, 12)
+        ));
+        lblValue.setBackground(new Color(249, 250, 251));
+        lblValue.setOpaque(true);
+        
+        row.add(lblLabel, BorderLayout.NORTH);
+        row.add(lblValue, BorderLayout.CENTER);
+        
+        return row;
+    }
+    
+    /**
+     * Tạo modern button với hover effect
+     */
+    private JButton createModernButton(String text, Color normalColor, Color hoverColor) {
+        JButton button = new JButton(text) {
+            private Color currentColor = normalColor;
+            
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                g2d.setColor(currentColor);
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                
+                g2d.setColor(getForeground());
+                g2d.setFont(getFont());
+                FontMetrics fm = g2d.getFontMetrics();
+                int x = (getWidth() - fm.stringWidth(getText())) / 2;
+                int y = (getHeight() + fm.getAscent() - fm.getDescent()) / 2;
+                g2d.drawString(getText(), x, y);
+            }
+            
+            {
+                addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseEntered(MouseEvent e) {
+                        currentColor = hoverColor;
+                        repaint();
+                    }
+                    
+                    @Override
+                    public void mouseExited(MouseEvent e) {
+                        currentColor = normalColor;
+                        repaint();
+                    }
+                });
+            }
+        };
+        
+        button.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setContentAreaFilled(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        return button;
     }
     
     private void submitBorrowRequest(String bookId, String returnDate, String notes, JDialog dialog) {
@@ -1587,6 +1723,17 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
             if (rowsInserted > 0) {
                 // Record activity
                 recordActivity(bookId, "borrow_request");
+                
+                // Create notification for user
+                NotificationUI.addNotification(
+                    userId, 
+                    "borrow_request", 
+                    "Đăng ký mượn sách",
+                    "Bạn đã đăng ký mượn sách thành công. Vui lòng chờ quản trị viên duyệt."
+                );
+                
+                // Update notification badge
+                updateNotificationBadge(btnNotification);
                 
                 dialog.dispose();
                 JOptionPane.showMessageDialog(this, 
@@ -3070,8 +3217,22 @@ public class ClientUI extends JFrame implements DarkModeManager.DarkModeListener
             
             stmt.execute(createBorrowRequestsTable);
             
+            // Create notifications table
+            String createNotificationsTable = "CREATE TABLE IF NOT EXISTS notifications (" +
+                "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                "user_id INTEGER NOT NULL, " +
+                "type TEXT NOT NULL, " +
+                "title TEXT NOT NULL, " +
+                "content TEXT NOT NULL, " +
+                "created_at TEXT NOT NULL, " +
+                "is_read INTEGER DEFAULT 0, " +
+                "FOREIGN KEY (user_id) REFERENCES users(id)" +
+                ")";
+            
+            stmt.execute(createNotificationsTable);
+            
         } catch (Exception e) {
-            System.err.println("Error initializing borrow_requests table: " + e.getMessage());
+            System.err.println("Error initializing database tables: " + e.getMessage());
         } finally {
             if (stmt != null) {
                 try {
